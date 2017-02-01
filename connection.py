@@ -1,8 +1,8 @@
 import sys
 import signal
-import atexit
 import argparse
 import socket
+import threading
 
 SERVER_IP_ADDRESS = '0.0.0.0'
 SERVER_PORT_NUMBER = 8887
@@ -25,6 +25,10 @@ class Connection():
         self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+        self.serverThread = threading.Thread(name = 'serverThread', target = self.openServerSocket)
+        self.serverThread.daemon = True
+        self.serverThread.start()
+
     def send(self, message):
         clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -32,7 +36,7 @@ class Connection():
             clientSocket.connect((self.clientIPAddress, self.clientPortNumber))
             print 'Sent message:', message
             clientSocket.send(message)
-            clientSocket.shutdown(socket.SHUT_RDWR)
+            clientSocket.shutdown(socket.SHUT_WR)
             clientSocket.close()
         except socket.error:
             'Client socket unsuccessful.'
@@ -51,10 +55,14 @@ class Connection():
             except socket.error:
                 break
 
-    @atexit.register
     def closeServerSocket(self):
-        self.serverSocket.shutdown(socket.SHUT_RD)
-        self.serverSocket.close()
+        try:
+            self.serverSocket.shutdown(socket.SHUT_RD)
+            self.serverSocket.close()
+        except socket.error:
+            pass
+
+        self.serverThread.stop = True
         print 'Connection closed.'
 
 def main(serverIPAddress = SERVER_IP_ADDRESS, serverPortNumber = SERVER_PORT_NUMBER, \
@@ -63,7 +71,6 @@ def main(serverIPAddress = SERVER_IP_ADDRESS, serverPortNumber = SERVER_PORT_NUM
     connection = Connection(serverIPAddress, serverPortNumber, \
                               clientIPAddress, clientPortNumber, \
                                 bufferSize)
-    connection.openServerSocket()
 
 if __name__ == '__main__':
     signal.signal(signal.SIGTSTP, endSignalHandler)

@@ -1,7 +1,7 @@
 import argparse
 import sys
+import atexit
 import connection
-import threading
  
 # SIP allows us to select the API we wish to use
 import sip
@@ -28,8 +28,6 @@ DEFAULT_BUFFER_SIZE = 1024
 TEST_STRING = 'Hello, World!'
 
 class Window(QWidget):
-
-    
     def __init__(self, serverIPAddress, serverPortNumber, \
                        clientIPAddress, clientPortNumber, \
                         bufferSize):
@@ -100,10 +98,8 @@ class Window(QWidget):
                                                 clientIPAddress = self.clientIPAddress, \
                                                 clientPortNumber = self.clientPortNumber,
                                                 bufferSize = self.bufferSize)
-        self.connectionThread = threading.Thread(name = 'connectionThread', \
-                                                 target = self.connection.openServerSocket)
-        self.connectionThread.daemon = True
-        self.connectionThread.start()
+        atexit.register(self.connection.closeServerSocket)
+
         self.connectionStatusBar.showMessage('Connection opened...')
 
         self.openConnectionButton.setEnabled(False)
@@ -111,7 +107,6 @@ class Window(QWidget):
         self.closeConnectionButton.setEnabled(True)
 
     def closeConnection(self):
-        self.connectionThread.stop = True
         self.connection.closeServerSocket()
         self.connectionStatusBar.showMessage('Connection closed...')
 
@@ -119,8 +114,10 @@ class Window(QWidget):
         self.sendMessageButton.setEnabled(False)
         self.closeConnectionButton.setEnabled(False)
 
+
     def closeEvent(self, QCloseEvent):
-        self.connection.closeServerSocket()
+        if self.closeConnectionButton.isEnabled() is True:
+            self.connection.closeServerSocket()
 
 def main(serverIPAddress=SERVER_IP_ADDRESS, serverPortNumber=SERVER_PORT_NUMBER, \
              clientIPAddress=CLIENT_IP_ADDRESS, clientPortNumber=CLIENT_PORT_NUMBER, \
