@@ -3,6 +3,7 @@ import signal
 import argparse
 import socket
 import threading
+from time import sleep
 
 SERVER_IP_ADDRESS = '0.0.0.0'
 SERVER_PORT_NUMBER = 8887
@@ -29,17 +30,42 @@ class Connection():
         self.serverThread.daemon = True
         self.serverThread.start()
 
+        self.handshakeThread = threading.Thread(name = 'handshakeThread', target = self.initiateHandShake)
+        self.handshakeThread.daemon = True
+        self.handshakeThread.start()
+
+    def initiateHandShake(self):
+        print 'Initiating handshake.'
+        while True:
+            clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                clientSocket.connect((self.clientIPAddress, self.clientPortNumber))
+                print 'Client sent message: SYN'
+                clientSocket.send('SYN')
+
+                if clientSocket.recv(DEFAULT_BUFFER_SIZE) == 'ACK':
+                    print 'Client received message: ACK'
+                    clientSocket.shutdown(socket.SHUT_WR)
+                    clientSocket.close()
+                    self.send('SYN-ACK')
+                    print 'Handshake successful.'
+                else:
+                    pass
+                break
+            except socket.error:
+                continue
+
     def send(self, message):
         clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             clientSocket.connect((self.clientIPAddress, self.clientPortNumber))
-            print 'Sent message:', message
+            print 'Client sent message:', message
             clientSocket.send(message)
             clientSocket.shutdown(socket.SHUT_WR)
             clientSocket.close()
         except socket.error:
-            'Client socket unsuccessful.'
             pass
 
     def openServerSocket(self):
@@ -47,11 +73,12 @@ class Connection():
         self.serverSocket.listen(1)
         while True:
             try:
-                print 'Server listening.'
                 connection, address = self.serverSocket.accept()
                 data = connection.recv(self.bufferSize)
-                if data:
-                    print 'Received data:', data
+                print 'Server received message:', data
+                if data == 'SYN':
+                    print 'Server sent message: ACK'
+                    connection.send('ACK')
             except socket.error:
                 break
 
@@ -63,6 +90,7 @@ class Connection():
             pass
 
         self.serverThread.stop = True
+        self.handshakeThread.stop = True
         print 'Connection closed.'
 
 def main(serverIPAddress = SERVER_IP_ADDRESS, serverPortNumber = SERVER_PORT_NUMBER, \
