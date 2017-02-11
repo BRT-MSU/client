@@ -3,7 +3,7 @@ import signal
 import argparse
 import socket
 import threading
-from time import sleep
+import Queue
 
 SERVER_IP_ADDRESS = '0.0.0.0'
 SERVER_PORT_NUMBER = 8887
@@ -22,6 +22,8 @@ class Connection():
         self.clientIPAddress = clientIPAddress
         self.clientPortNumber = clientPortNumber
         self.bufferSize = bufferSize
+
+        self.serverQueue = Queue.Queue()
 
         self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -68,6 +70,12 @@ class Connection():
         except socket.error:
             pass
 
+    def getMessage(self):
+        if not self.serverQueue.empty():
+            return self.serverQueue.get()
+        else:
+            return None
+
     def openServerSocket(self):
         self.serverSocket.bind((self.serverIPAddress, self.serverPortNumber))
         self.serverSocket.listen(1)
@@ -75,10 +83,12 @@ class Connection():
             try:
                 connection, address = self.serverSocket.accept()
                 data = connection.recv(self.bufferSize)
-                print 'Server received message:', data
                 if data == 'SYN':
                     print 'Server sent message: ACK'
                     connection.send('ACK')
+                else:
+                    print 'Server received message:', data
+                    self.serverQueue.put(data)
             except socket.error:
                 break
 
@@ -96,7 +106,7 @@ class Connection():
 def main(serverIPAddress = SERVER_IP_ADDRESS, serverPortNumber = SERVER_PORT_NUMBER, \
         clientIPAddress = CLIENT_IP_ADDRESS, clientPortNumber = CLIENT_PORT_NUMBER, \
          bufferSize = DEFAULT_BUFFER_SIZE):
-    connection = Connection(serverIPAddress, serverPortNumber, \
+    return Connection(serverIPAddress, serverPortNumber, \
                               clientIPAddress, clientPortNumber, \
                                 bufferSize)
 

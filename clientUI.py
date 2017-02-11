@@ -91,6 +91,7 @@ class Window(QWidget):
 
     def sendMessage(self):
         self.connection.send(TEST_STRING)
+        self.connectionStatusBar.showMessage(self.connection.getMessage())
 
     def openConnection(self):
         self.connection = connection.Connection(serverIPAddress = self.serverIPAddress, \
