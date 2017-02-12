@@ -1,6 +1,7 @@
 import argparse
 import sys
 import atexit
+
 import connection
  
 # SIP allows us to select the API we wish to use
@@ -17,33 +18,22 @@ sip.setapi('QUrl', 2)
 sip.setapi('QVariant', 2)
 
 from PyQt5.QtWidgets import QApplication, QWidget
-from PyQt5 import QtGui, QtWidgets
-
-SERVER_IP_ADDRESS = '0.0.0.0'
-SERVER_PORT_NUMBER = 9996
-CLIENT_IP_ADDRESS = 'localhost'
-CLIENT_PORT_NUMBER = 8887
-DEFAULT_BUFFER_SIZE = 1024
-
-TEST_STRING = 'Hello, World!'
+from PyQt5 import Qt, QtCore, QtGui, QtWidgets
 
 class Window(QWidget):
-    def __init__(self, serverIPAddress, serverPortNumber, \
-                       clientIPAddress, clientPortNumber, \
-                        bufferSize):
+    def __init__(self, client):
         super(Window, self).__init__()
 
-        self.serverIPAddress = serverIPAddress
-        self.serverPortNumber = serverPortNumber
-        self.clientIPAddress = clientIPAddress
-        self.clientPortNumber = clientPortNumber
-        self.bufferSize = bufferSize
+        self.client = client
 
         self.initUI()
         
     def initUI(self):
-        connectionStatusLabel = QtWidgets.QLabel('Connection Status:')
-        self.connectionStatusBar = QtWidgets.QStatusBar()
+        clientStatusLabel = QtWidgets.QLabel('Client status:')
+        self.clientStatusBar = QtWidgets.QStatusBar()
+
+        serverStatusLabel = QtWidgets.QLabel('Server Status:')
+        self.serverStatusBar = QtWidgets.QStatusBar()
 
         self.sendMessageButton = QtWidgets.QPushButton('Send Message', self)
         self.sendMessageButton.clicked.connect(self.sendMessage)
@@ -59,8 +49,11 @@ class Window(QWidget):
         grid =  QtWidgets.QGridLayout()
         grid.setSpacing(10)
 
-        grid.addWidget(connectionStatusLabel, 1, 0)
-        grid.addWidget(self.connectionStatusBar, 1, 1)
+        grid.addWidget(clientStatusLabel, 1, 0)
+        grid.addWidget(self.clientStatusBar, 1, 1)
+
+        grid.addWidget(serverStatusLabel, 2, 0)
+        grid.addWidget(self.serverStatusBar, 2, 1)
 
         hbox = QtWidgets.QHBoxLayout()
         hbox.addStretch(1)
@@ -89,70 +82,50 @@ class Window(QWidget):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    def keyPressEvent(self, QKeyEvent):
+        if not self.openConnectionButton.isEnabled():
+            if QKeyEvent.key() == QtCore.Qt.Key_W:
+                self.client.sendMessage()
+
     def sendMessage(self):
-        self.connection.send(TEST_STRING)
-        self.connectionStatusBar.showMessage(self.connection.getMessage())
+        self.client.sendMessage()
 
     def openConnection(self):
-        self.connection = connection.Connection(serverIPAddress = self.serverIPAddress, \
-                                                serverPortNumber = self.serverPortNumber, \
-                                                clientIPAddress = self.clientIPAddress, \
-                                                clientPortNumber = self.clientPortNumber,
-                                                bufferSize = self.bufferSize)
-        atexit.register(self.connection.closeServerSocket)
-
-        self.connectionStatusBar.showMessage('Connection opened...')
+        self.client.openConnection()
 
         self.openConnectionButton.setEnabled(False)
         self.sendMessageButton.setEnabled(True)
         self.closeConnectionButton.setEnabled(True)
 
     def closeConnection(self):
-        self.connection.closeServerSocket()
-        self.connectionStatusBar.showMessage('Connection closed...')
+        quit_msg = 'Are you sure you want to close the connection?'
+        reply = QtWidgets.QMessageBox.question(self, 'Message',
+                                               quit_msg, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
 
-        self.openConnectionButton.setEnabled(True)
-        self.sendMessageButton.setEnabled(False)
-        self.closeConnectionButton.setEnabled(False)
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.client.closeConnection()
+
+            self.openConnectionButton.setEnabled(True)
+            self.sendMessageButton.setEnabled(False)
+            self.closeConnectionButton.setEnabled(False)
 
 
     def closeEvent(self, QCloseEvent):
-        if self.closeConnectionButton.isEnabled() is True:
-            self.connection.closeServerSocket()
+        quit_msg = 'Are you sure you want to exit the client?'
+        reply = QtWidgets.QMessageBox.question(self, 'Message',
+                                           quit_msg, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
 
-def main(serverIPAddress=SERVER_IP_ADDRESS, serverPortNumber=SERVER_PORT_NUMBER, \
-             clientIPAddress=CLIENT_IP_ADDRESS, clientPortNumber=CLIENT_PORT_NUMBER, \
-                bufferSize = DEFAULT_BUFFER_SIZE):
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.client.shutdown()
+            QCloseEvent.accept()
+        else:
+            QCloseEvent.ignore()
+
+def main(client):
     app = QApplication(sys.argv)
-    ex = Window(serverIPAddress, serverPortNumber, \
-                clientIPAddress, clientPortNumber, \
-                bufferSize)
+    window = Window(client)
     sys.exit(app.exec_())
+    return window
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-sip', '--serverIPAddress', help='server IP address argument', \
-                        required=False, default=SERVER_IP_ADDRESS)
-    parser.add_argument('-spn', '--serverPortNumber', help='server port number argument', \
-                        required=False, default=str(SERVER_PORT_NUMBER))
-    parser.add_argument('-cip', '--clientIPAddress', help = 'client IP address argument', \
-                        required = False, default = CLIENT_IP_ADDRESS)
-    parser.add_argument('-cpn', '--clientPortNumber', help = 'client port number argument', \
-                        required = False, default = str(CLIENT_PORT_NUMBER))
-    parser.add_argument('-bs', '--bufferSize', help='buffer size argument', \
-                        required=False, default=str(DEFAULT_BUFFER_SIZE))
-    args = parser.parse_args()
-
-    serverIPAddress = args.serverIPAddress
-    serverPortNumber = int(args.serverPortNumber)
-    clientIPAddress = args.clientIPAddress
-    clientPortNumber = int(args.clientPortNumber)
-    bufferSize = int(args.bufferSize)
-
-    print 'serverIpAddress:', serverIPAddress
-    print 'serverPortNumber:', serverPortNumber
-    print 'clientIpAddress:', clientIPAddress
-    print 'clientPortNumber:', clientPortNumber
-    print 'bufferSize:', bufferSize
-
-    main(serverIPAddress, serverPortNumber, clientIPAddress, clientPortNumber, bufferSize)
+    main()

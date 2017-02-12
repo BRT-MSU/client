@@ -1,18 +1,23 @@
-import sys
-import signal
 import argparse
 import socket
 import threading
 import Queue
+import enum
 
 SERVER_IP_ADDRESS = '0.0.0.0'
-SERVER_PORT_NUMBER = 8887
+SERVER_PORT_NUMBER = 8888
 CLIENT_IP_ADDRESS = 'localhost'
-CLIENT_PORT_NUMBER = 9996
+CLIENT_PORT_NUMBER = 9999
 DEFAULT_BUFFER_SIZE = 1024
 
-def endSignalHandler():
-    sys.exit()
+class ClientStatus(enum.Enum):
+    HANDSHAKE_INITIALIZED = 'Handshake initialized.'
+    HANDSHAKE_SUCCESSFUL = 'Handshake successful.'
+
+class ServerStatus(enum.Enum):
+    SERVER_INITIALIZED = 'Server initialized.'
+    SERVER_LISTENING = 'Server listening.'
+    SERVER_SHUTDOWN = 'Server shutdown.'
 
 class Connection():
     def __init__(self, serverIPAddress, serverPortNumber, clientIPAddress, \
@@ -25,33 +30,32 @@ class Connection():
 
         self.serverQueue = Queue.Queue()
 
-        self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
+        self.serverStatus = None
         self.serverThread = threading.Thread(name = 'serverThread', target = self.openServerSocket)
         self.serverThread.daemon = True
         self.serverThread.start()
 
+        self.clientStatus = None
         self.handshakeThread = threading.Thread(name = 'handshakeThread', target = self.initiateHandShake)
         self.handshakeThread.daemon = True
         self.handshakeThread.start()
 
     def initiateHandShake(self):
-        print 'Initiating handshake.'
+        self.clientStatus = ClientStatus.HANDSHAKE_INITIALIZED
+        print self.clientStatus
         while True:
             clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 clientSocket.connect((self.clientIPAddress, self.clientPortNumber))
-                print 'Client sent message: SYN'
                 clientSocket.send('SYN')
 
-                if clientSocket.recv(DEFAULT_BUFFER_SIZE) == 'ACK':
-                    print 'Client received message: ACK'
+                if clientSocket.recv(self.bufferSize) == 'ACK':
                     clientSocket.shutdown(socket.SHUT_WR)
                     clientSocket.close()
                     self.send('SYN-ACK')
-                    print 'Handshake successful.'
+                    self.clientStatus = ClientStatus.HANDSHAKE_SUCCESSFUL
+                    print self.clientStatus
                 else:
                     pass
                 break
@@ -63,7 +67,7 @@ class Connection():
         clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             clientSocket.connect((self.clientIPAddress, self.clientPortNumber))
-            print 'Client sent message:', message
+            print 'Client sent:', message
             clientSocket.send(message)
             clientSocket.shutdown(socket.SHUT_WR)
             clientSocket.close()
@@ -77,18 +81,24 @@ class Connection():
             return None
 
     def openServerSocket(self):
+        self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         self.serverSocket.bind((self.serverIPAddress, self.serverPortNumber))
         self.serverSocket.listen(1)
+        self.serverStatus = ServerStatus.SERVER_INITIALIZED
+        self.serverStatus
         while True:
             try:
+                self.serverStatus = ServerStatus.SERVER_LISTENING
+                print self.serverStatus
                 connection, address = self.serverSocket.accept()
-                data = connection.recv(self.bufferSize)
-                if data == 'SYN':
-                    print 'Server sent message: ACK'
+                message = connection.recv(self.bufferSize)
+                if message == 'SYN':
                     connection.send('ACK')
                 else:
-                    print 'Server received message:', data
-                    self.serverQueue.put(data)
+                    print 'Server received:', message
+                    self.serverQueue.put(message)
             except socket.error:
                 break
 
@@ -96,23 +106,20 @@ class Connection():
         try:
             self.serverSocket.shutdown(socket.SHUT_RD)
             self.serverSocket.close()
+            self.serverStatus = ServerStatus.SERVER_SHUTDOWN
+            print self.serverStatus
         except socket.error:
             pass
 
         self.serverThread.stop = True
         self.handshakeThread.stop = True
-        print 'Connection closed.'
 
 def main(serverIPAddress = SERVER_IP_ADDRESS, serverPortNumber = SERVER_PORT_NUMBER, \
-        clientIPAddress = CLIENT_IP_ADDRESS, clientPortNumber = CLIENT_PORT_NUMBER, \
-         bufferSize = DEFAULT_BUFFER_SIZE):
-    return Connection(serverIPAddress, serverPortNumber, \
-                              clientIPAddress, clientPortNumber, \
-                                bufferSize)
+            clientIPAddress = CLIENT_IP_ADDRESS, clientPortNumber = CLIENT_PORT_NUMBER, \
+            bufferSize = DEFAULT_BUFFER_SIZE):
+    return Connection(serverIPAddress, serverPortNumber, clientIPAddress, clientPortNumber, bufferSize)
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGTSTP, endSignalHandler)
-
     parser = argparse.ArgumentParser()
     parser.add_argument('-sip', '--serverIPAddress', help='server IP address argument', \
                         required=False, default=SERVER_IP_ADDRESS)
