@@ -99,7 +99,7 @@ class Window(QWidget):
 
     def closeConnection(self):
         quit_msg = 'Are you sure you want to close the connection?'
-        reply = QtWidgets.QMessageBox.question(self, 'Message',
+        reply = QtWidgets.QMessageBox.question(self, 'Message', \
                                                quit_msg, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
 
         if reply == QtWidgets.QMessageBox.Yes:
@@ -112,8 +112,8 @@ class Window(QWidget):
 
     def closeEvent(self, QCloseEvent):
         quit_msg = 'Are you sure you want to exit the client?'
-        reply = QtWidgets.QMessageBox.question(self, 'Message',
-                                           quit_msg, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+        reply = QtWidgets.QMessageBox.question(self, 'Message', \
+                                               quit_msg, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
 
         if reply == QtWidgets.QMessageBox.Yes:
             self.client.shutdown()

@@ -48,12 +48,12 @@ class Connection():
             clientSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 clientSocket.connect((self.clientIPAddress, self.clientPortNumber))
-                clientSocket.send('SYN')
+                clientSocket.send('SYN\n')
 
-                if clientSocket.recv(self.bufferSize) == 'ACK':
+                if clientSocket.recv(self.bufferSize) == 'ACK\n':
+                    clientSocket.send('SYN-ACK\n')
                     clientSocket.shutdown(socket.SHUT_WR)
                     clientSocket.close()
-                    self.send('SYN-ACK')
                     self.clientStatus = ClientStatus.HANDSHAKE_SUCCESSFUL
                     print self.clientStatus
                 else:
@@ -68,7 +68,7 @@ class Connection():
         try:
             clientSocket.connect((self.clientIPAddress, self.clientPortNumber))
             print 'Client sent:', message
-            clientSocket.send(message)
+            clientSocket.send(message + '\n')
             clientSocket.shutdown(socket.SHUT_WR)
             clientSocket.close()
         except socket.error:
@@ -86,18 +86,16 @@ class Connection():
 
         self.serverSocket.bind((self.serverIPAddress, self.serverPortNumber))
         self.serverSocket.listen(1)
-        self.serverStatus = ServerStatus.SERVER_INITIALIZED
-        self.serverStatus
+        self.serverStatus = ServerStatus.SERVER_LISTENING
+        print self.serverStatus
         while True:
             try:
-                self.serverStatus = ServerStatus.SERVER_LISTENING
-                print self.serverStatus
                 connection, address = self.serverSocket.accept()
                 message = connection.recv(self.bufferSize)
-                if message == 'SYN':
-                    connection.send('ACK')
+                if message == 'SYN\n':
+                    connection.send('ACK\n')
                 else:
-                    print 'Server received:', message
+                    print 'Server received:', message.rstrip()
                     self.serverQueue.put(message)
             except socket.error:
                 break
