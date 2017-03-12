@@ -4,6 +4,17 @@ import threading
 import connection
 import clientUI
 
+CLIENT_IP_ADDRESS = '0.0.0.0'
+CLIENT_PORT_NUMBER = 1123
+
+# Commented out for testing purposes only
+CONTROLLER_IP_ADDRESS = 'localhost'#'192.168.1.3'
+CONTROLLER_TO_CLIENT_PORT_NUMBER = 5813
+CONTROLLER_TO_TANGO_PORT_NUMBER = 2134
+
+TANGO_IP_ADDRESS = '192.168.1.4'
+TANGO_PORT_NUMBER = 5589
+
 class Client():
     def __init__(self, serverIPAddress, serverPortNumber, \
                  clientIPAddress, clientPortNumber, bufferSize):
@@ -59,13 +70,13 @@ def main(serverIPAddress=connection.SERVER_IP_ADDRESS, serverPortNumber=connecti
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-sip', '--serverIPAddress', help='server IP address argument', \
-                        required=False, default=connection.SERVER_IP_ADDRESS)
+                        required=False, default=CLIENT_IP_ADDRESS)
     parser.add_argument('-spn', '--serverPortNumber', help='server port number argument', \
-                        required=False, default=str(connection.SERVER_PORT_NUMBER))
+                        required=False, default=str(CLIENT_PORT_NUMBER))
     parser.add_argument('-cip', '--clientIPAddress', help='client IP address argument', \
-                        required=False, default=connection.CLIENT_IP_ADDRESS)
+                        required=False, default=CONTROLLER_IP_ADDRESS)
     parser.add_argument('-cpn', '--clientPortNumber', help='client port number argument', \
-                        required=False, default=str(connection.CLIENT_PORT_NUMBER))
+                        required=False, default=str(CONTROLLER_TO_CLIENT_PORT_NUMBER))
     parser.add_argument('-bs', '--bufferSize', help='buffer size argument', \
                         required=False, default=str(connection.DEFAULT_BUFFER_SIZE))
     args = parser.parse_args()
