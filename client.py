@@ -13,7 +13,6 @@ class Client():
         self.clientPortNumber = clientPortNumber
         self.bufferSize = bufferSize
 
-        self.messageToSend = 'Hello, World.'
         self.messageReceived = None
 
         self.clientUI = clientUI.main(self)
@@ -29,8 +28,8 @@ class Client():
         self.connectionThread.daemon = True
         self.connectionThread.start()
 
-    def sendMessage(self):
-        self.connection.send(self.messageToSend)
+    def sendMessage(self, messageToSend):
+        self.connection.send(messageToSend)
 
     def run(self):
         while True:

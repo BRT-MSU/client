@@ -20,6 +20,9 @@ sip.setapi('QVariant', 2)
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets
 
+forwardToTangoString = '-t'
+forwardToMotorString = '-m'
+
 class Window(QWidget):
     def __init__(self, client):
         super(Window, self).__init__()
@@ -34,10 +37,6 @@ class Window(QWidget):
 
         serverStatusLabel = QtWidgets.QLabel('Server Status:')
         self.serverStatusBar = QtWidgets.QStatusBar()
-
-        self.sendMessageButton = QtWidgets.QPushButton('Send Message', self)
-        self.sendMessageButton.clicked.connect(self.sendMessage)
-        self.sendMessageButton.setEnabled(False)
 
         self.openConnectionButton = QtWidgets.QPushButton('Open Connection', self)
         self.openConnectionButton.clicked.connect(self.openConnection)
@@ -57,7 +56,6 @@ class Window(QWidget):
 
         hbox = QtWidgets.QHBoxLayout()
         hbox.addStretch(1)
-        hbox.addWidget(self.sendMessageButton)
         hbox.addWidget(self.openConnectionButton)
         hbox.addWidget(self.closeConnectionButton)
 
@@ -85,16 +83,18 @@ class Window(QWidget):
     def keyPressEvent(self, QKeyEvent):
         if not self.openConnectionButton.isEnabled():
             if QKeyEvent.key() == QtCore.Qt.Key_W:
-                self.client.sendMessage()
-
-    def sendMessage(self):
-        self.client.sendMessage()
+                self.client.sendMessage(forwardToMotorString + 'W500')
+            elif QKeyEvent.key() == QtCore.Qt.Key_S:
+                self.client.sendMessage(forwardToMotorString + 'S500')
+            elif QKeyEvent.key() == QtCore.Qt.Key_A:
+                self.client.sendMessage(forwardToMotorString + 'A')
+            elif QKeyEvent.key() == QtCore.Qt.Key_D:
+                self.client.sendMessage(forwardToMotorString + 'D')
 
     def openConnection(self):
         self.client.openConnection()
 
         self.openConnectionButton.setEnabled(False)
-        self.sendMessageButton.setEnabled(True)
         self.closeConnectionButton.setEnabled(True)
 
     def closeConnection(self):
@@ -106,7 +106,6 @@ class Window(QWidget):
             self.client.closeConnection()
 
             self.openConnectionButton.setEnabled(True)
-            self.sendMessageButton.setEnabled(False)
             self.closeConnectionButton.setEnabled(False)
 
 
