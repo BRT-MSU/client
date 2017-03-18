@@ -9,7 +9,7 @@ class forwardingPrefix(enum.Enum):
 
 class subMessagePrefix(enum.Enum):
     LEFT_MOTOR = 'l'
-    RIGHT_MOTOR = 'm'
+    RIGHT_MOTOR = 'r'
     ACTUATOR = 'a'
     BUCKET = 'b'
     SERVO = 's'
