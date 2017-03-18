@@ -1,8 +1,6 @@
-import argparse
 import sys
-import atexit
-
-import connection
+import messageLib
+import enum
  
 # SIP allows us to select the API we wish to use
 import sip
@@ -20,8 +18,14 @@ sip.setapi('QVariant', 2)
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets
 
-forwardToTangoString = '-t'
-forwardToMotorString = '-m'
+class motor(enum.Enum):
+    DRIVE_MOTORS = 0
+    ACTUATOR = 1
+    BUCKET = 2
+    SERVO = 3
+
+# Default motor speeds
+MOTOR_SPEEDS = {0: 25, 1: 25, 2: 25, 3: 25}
 
 class Window(QWidget):
     def __init__(self, client):
@@ -29,21 +33,41 @@ class Window(QWidget):
 
         self.client = client
 
+        self.driveKeysPressed = []
+
+        self.motorSpeedToAdjust = motor.DRIVE_MOTORS
+
+        print self.motorSpeedToAdjust
+
         self.initUI()
         
     def initUI(self):
+        # Client status
         clientStatusLabel = QtWidgets.QLabel('Client status:')
         self.clientStatusBar = QtWidgets.QStatusBar()
 
+        # Server status
         serverStatusLabel = QtWidgets.QLabel('Server Status:')
         self.serverStatusBar = QtWidgets.QStatusBar()
 
+        # Button to open the connection
         self.openConnectionButton = QtWidgets.QPushButton('Open Connection', self)
-        self.openConnectionButton.clicked.connect(self.openConnection)
+        self.openConnectionButton.clicked.connect(self.openConnectionEvent)
 
+        # Button to close the connection
         self.closeConnectionButton = QtWidgets.QPushButton('Close Connection', self)
-        self.closeConnectionButton.clicked.connect(self.closeConnection)
+        self.closeConnectionButton.clicked.connect(self.closeConnectionEvent)
         self.closeConnectionButton.setEnabled(False)
+
+        # Button to activate autonomy
+        self.activateAutonomyButton = QtWidgets.QPushButton('Activate Autonomy', self)
+        self.activateAutonomyButton.clicked.connect(self.activateAutonomyEvent)
+        self.activateAutonomyButton.setEnabled(False)
+
+        # Button to deactivate autonomy
+        self.deactivateAutonomyButton = QtWidgets.QPushButton('Deactivate Autonomy', self)
+        self.deactivateAutonomyButton.clicked.connect(self.deactivateAutonomyEvent)
+        self.deactivateAutonomyButton.setEnabled(False)
 
         grid =  QtWidgets.QGridLayout()
         grid.setSpacing(10)
@@ -54,15 +78,21 @@ class Window(QWidget):
         grid.addWidget(serverStatusLabel, 2, 0)
         grid.addWidget(self.serverStatusBar, 2, 1)
 
-        hbox = QtWidgets.QHBoxLayout()
-        hbox.addStretch(1)
-        hbox.addWidget(self.openConnectionButton)
-        hbox.addWidget(self.closeConnectionButton)
+        hBox0 = QtWidgets.QHBoxLayout()
+        hBox0.addStretch(1)
+        hBox0.addWidget(self.openConnectionButton)
+        hBox0.addWidget(self.closeConnectionButton)
+
+        hBox1 = QtWidgets.QHBoxLayout()
+        hBox1.addStretch(1)
+        hBox1.addWidget(self.activateAutonomyButton)
+        hBox1.addWidget(self.deactivateAutonomyButton)
 
         vbox = QtWidgets.QVBoxLayout()
         vbox.addStretch(1)
         vbox.addLayout(grid)
-        vbox.addLayout(hbox)
+        vbox.addLayout(hBox0)
+        vbox.addLayout(hBox1)
         
         self.setLayout(vbox)
         
@@ -80,27 +110,115 @@ class Window(QWidget):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    def keyPressEvent(self, QKeyEvent):
-        if not self.openConnectionButton.isEnabled():
-            if QKeyEvent.key() == QtCore.Qt.Key_W:
-                self.client.sendMessage(forwardToMotorString + 'W500')
-            elif QKeyEvent.key() == QtCore.Qt.Key_S:
-                self.client.sendMessage(forwardToMotorString + 'S500')
-            elif QKeyEvent.key() == QtCore.Qt.Key_A:
-                self.client.sendMessage(forwardToMotorString + 'A')
-            elif QKeyEvent.key() == QtCore.Qt.Key_D:
-                self.client.sendMessage(forwardToMotorString + 'D')
+    def keyPressEvent(self, event):
+        if self.openConnectionButton.isEnabled() \
+                or self.deactivateAutonomyButton.isEnabled():
+            return
 
-    def openConnection(self):
+        key = event.key()
+
+        if not event.isAutoRepeat():
+            # Driving logic
+            if key == QtCore.Qt.Key_W:
+                self.driveKeysPressed.append(key)
+
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'l': MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            elif key == QtCore.Qt.Key_S:
+                self.driveKeysPressed.append(key)
+
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'l': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            elif key == QtCore.Qt.Key_A:
+                self.driveKeysPressed.append(key)
+
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'l': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            elif key == QtCore.Qt.Key_D:
+                self.driveKeysPressed.append(key)
+
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'l': MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            # Motor speed adjustment mode logic
+            elif key == QtCore.Qt.Key_1:
+                self.motorSpeedToAdjust = motor.DRIVE_MOTORS
+                print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
+            elif key == QtCore.Qt.Key_2:
+                self.motorSpeedToAdjust = motor.ACTUATOR
+                print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
+            elif key == QtCore.Qt.Key_3:
+                self.motorSpeedToAdjust = motor.BUCKET
+                print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
+            elif key == QtCore.Qt.Key_4:
+                self.motorSpeedToAdjust = motor.SERVO
+                print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
+        # Motor speed adjustment logic
+        if key == QtCore.Qt.Key_Up:
+            MOTOR_SPEEDS[self.motorSpeedToAdjust] += 1
+            print MOTOR_SPEEDS[self.motorSpeedToAdjust]
+        elif key == QtCore.Qt.Key_Down:
+            MOTOR_SPEEDS[self.motorSpeedToAdjust] -= 1
+            print MOTOR_SPEEDS[self.motorSpeedToAdjust]
+
+    def keyReleaseEvent(self, event):
+        if event.isAutoRepeat() or self.openConnectionButton.isEnabled() \
+                or self.deactivateAutonomyButton.isEnabled():
+            return
+
+        key = event.key()
+
+        if key in self.driveKeysPressed:
+            self.driveKeysPressed.remove(key)
+
+        # Driving logic
+        if not len(self.driveKeysPressed):
+            if key == QtCore.Qt.Key_W:
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'l': 0, 'r': 0}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            elif key == QtCore.Qt.Key_S:
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'l': 0, 'r': 0}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            elif key == QtCore.Qt.Key_A:
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'l': 0, 'r': 0}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            elif key == QtCore.Qt.Key_D:
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'l': 0, 'r': 0}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+
+    def openConnectionEvent(self):
         self.client.openConnection()
 
         self.openConnectionButton.setEnabled(False)
         self.closeConnectionButton.setEnabled(True)
 
-    def closeConnection(self):
-        quit_msg = 'Are you sure you want to close the connection?'
+        self.activateAutonomyButton.setEnabled(True)
+
+    def closeConnectionEvent(self):
+        if self.deactivateAutonomyButton.isEnabled():
+            autonomyMessage = 'Please deactivate autonomy first.'
+            QtWidgets.QMessageBox.question(self, 'Message', \
+                                           autonomyMessage, QtWidgets.QMessageBox.Ok)
+            return
+
+        quitMessage = 'Are you sure you want to close the connection?'
         reply = QtWidgets.QMessageBox.question(self, 'Message', \
-                                               quit_msg, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+                                               quitMessage, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
 
         if reply == QtWidgets.QMessageBox.Yes:
             self.client.closeConnection()
@@ -108,13 +226,46 @@ class Window(QWidget):
             self.openConnectionButton.setEnabled(True)
             self.closeConnectionButton.setEnabled(False)
 
+            self.activateAutonomyButton.setEnabled(False)
+            self.deactivateAutonomyButton.setEnabled(False)
 
-    def closeEvent(self, QCloseEvent):
-        quit_msg = 'Are you sure you want to exit the client?'
+    def activateAutonomyEvent(self):
+        quit_msg = 'Are you sure you want to activate autonomy?'
         reply = QtWidgets.QMessageBox.question(self, 'Message', \
                                                quit_msg, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
 
         if reply == QtWidgets.QMessageBox.Yes:
+            self.activateAutonomy()
+
+    def activateAutonomy(self):
+        self.client.sendMessage('Activate autonomy.')
+
+        self.activateAutonomyButton.setEnabled(False)
+        self.deactivateAutonomyButton.setEnabled(True)
+
+    def deactivateAutonomyEvent(self):
+        deactivateMessage = 'Are you sure you want to deactivate autonomy?'
+        reply = QtWidgets.QMessageBox.question(self, 'Message', \
+                                               deactivateMessage, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.deactivateAutonomy()
+
+    def deactivateAutonomy(self):
+        self.client.sendMessage('Deactivate autonomy.')
+
+        self.activateAutonomyButton.setEnabled(True)
+        self.deactivateAutonomyButton.setEnabled(False)
+
+    def closeEvent(self, QCloseEvent):
+        quitMessage = 'Are you sure you want to exit the client?'
+        reply = QtWidgets.QMessageBox.question(self, 'Message', \
+                                               quitMessage, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            if self.deactivateAutonomyButton.isEnabled():
+                self.deactivateAutonomy()
+
             self.client.shutdown()
             QCloseEvent.accept()
         else:
