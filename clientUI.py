@@ -24,8 +24,9 @@ class motor(enum.Enum):
     BUCKET = 2
     SERVO = 3
 
-# Default motor speeds
+# Default motor speeds {DRIVE_MOTORS, ACTUATOR, BUCKET, SERVO}
 MOTOR_SPEEDS = {0: 25, 1: 25, 2: 25, 3: 25}
+MAX_MOTOR_SPEED = 100
 
 class Window(QWidget):
     def __init__(self, client):
@@ -53,20 +54,24 @@ class Window(QWidget):
         # Button to open the connection
         self.openConnectionButton = QtWidgets.QPushButton('Open Connection', self)
         self.openConnectionButton.clicked.connect(self.openConnectionEvent)
+        self.openConnectionButton.setFocusPolicy(QtCore.Qt.NoFocus)
 
         # Button to close the connection
         self.closeConnectionButton = QtWidgets.QPushButton('Close Connection', self)
         self.closeConnectionButton.clicked.connect(self.closeConnectionEvent)
+        self.closeConnectionButton.setFocusPolicy(QtCore.Qt.NoFocus)
         self.closeConnectionButton.setEnabled(False)
 
         # Button to activate autonomy
         self.activateAutonomyButton = QtWidgets.QPushButton('Activate Autonomy', self)
         self.activateAutonomyButton.clicked.connect(self.activateAutonomyEvent)
+        self.activateAutonomyButton.setFocusPolicy(QtCore.Qt.NoFocus)
         self.activateAutonomyButton.setEnabled(False)
 
         # Button to deactivate autonomy
         self.deactivateAutonomyButton = QtWidgets.QPushButton('Deactivate Autonomy', self)
         self.deactivateAutonomyButton.clicked.connect(self.deactivateAutonomyEvent)
+        self.deactivateAutonomyButton.setFocusPolicy(QtCore.Qt.NoFocus)
         self.deactivateAutonomyButton.setEnabled(False)
 
         grid =  QtWidgets.QGridLayout()
@@ -160,13 +165,20 @@ class Window(QWidget):
             elif key == QtCore.Qt.Key_4:
                 self.motorSpeedToAdjust = motor.SERVO
                 print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
+
         # Motor speed adjustment logic
         if key == QtCore.Qt.Key_Up:
-            MOTOR_SPEEDS[self.motorSpeedToAdjust] += 1
-            print MOTOR_SPEEDS[self.motorSpeedToAdjust]
+            if MOTOR_SPEEDS[self.motorSpeedToAdjust] < MAX_MOTOR_SPEED:
+                MOTOR_SPEEDS[self.motorSpeedToAdjust] += 1
+                print MOTOR_SPEEDS[self.motorSpeedToAdjust]
+                if len(self.driveKeysPressed):
+                    self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.driveKeysPressed[-1], QtCore.Qt.NoModifier))
         elif key == QtCore.Qt.Key_Down:
-            MOTOR_SPEEDS[self.motorSpeedToAdjust] -= 1
-            print MOTOR_SPEEDS[self.motorSpeedToAdjust]
+            if MOTOR_SPEEDS[self.motorSpeedToAdjust] > 0:
+                MOTOR_SPEEDS[self.motorSpeedToAdjust] -= 1
+                print MOTOR_SPEEDS[self.motorSpeedToAdjust]
+                if len(self.driveKeysPressed):
+                    self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.driveKeysPressed[-1], QtCore.Qt.NoModifier))
 
     def keyReleaseEvent(self, event):
         if event.isAutoRepeat() or self.openConnectionButton.isEnabled() \
@@ -256,6 +268,14 @@ class Window(QWidget):
 
         self.activateAutonomyButton.setEnabled(True)
         self.deactivateAutonomyButton.setEnabled(False)
+
+    def setChildrenFocusPolicy(self, policy):
+        def recursiveSetChildFocusPolicy(parentQWidget):
+            for childQWidget in parentQWidget.findChildren(QtGui.QWidget):
+                childQWidget.setFocusPolicy(policy)
+                recursiveSetChildFocusPolicy(childQWidget)
+
+        recursiveSetChildFocusPolicy(self)
 
     def closeEvent(self, QCloseEvent):
         quitMessage = 'Are you sure you want to exit the client?'
