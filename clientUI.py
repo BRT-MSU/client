@@ -36,6 +36,10 @@ class Window(QWidget):
 
         self.driveKeysPressed = []
 
+        self.actuatorKeysPressed = []
+
+        self.bucketKeysPressed = []
+
         self.motorSpeedToAdjust = motor.DRIVE_MOTORS
 
         self.initUI()
@@ -154,6 +158,7 @@ class Window(QWidget):
                 subMessages = {'l': MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
                 message = messageLib.Message(forwardingPrefix, subMessages).message
                 self.client.sendMessage(message)
+
             # Motor speed adjustment mode logic
             elif key == QtCore.Qt.Key_1:
                 self.motorSpeedToAdjust = motor.DRIVE_MOTORS
@@ -167,6 +172,42 @@ class Window(QWidget):
             elif key == QtCore.Qt.Key_4:
                 self.motorSpeedToAdjust = motor.SERVO
                 print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
+
+            # Actuator logic
+            elif key == QtCore.Qt.Key_U:
+                if key not in self.actuatorKeysPressed:
+                    self.actuatorKeysPressed.append(key)
+
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'a': MOTOR_SPEEDS[motor.ACTUATOR]}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            elif key == QtCore.Qt.Key_J:
+                if key not in self.actuatorKeysPressed:
+                    self.actuatorKeysPressed.append(key)
+
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'a': -1 * MOTOR_SPEEDS[motor.ACTUATOR]}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+
+            # Bucket logic
+            elif key == QtCore.Qt.Key_I:
+                if key not in self.bucketKeysPressed:
+                    self.bucketKeysPressed.append(key)
+
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'b': MOTOR_SPEEDS[motor.BUCKET]}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            elif key == QtCore.Qt.Key_K:
+                if key not in self.bucketKeysPressed:
+                    self.bucketKeysPressed.append(key)
+
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'b': -1 * MOTOR_SPEEDS[motor.BUCKET]}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
 
         # Motor speed adjustment logic
         if key == QtCore.Qt.Key_Up:
@@ -192,6 +233,12 @@ class Window(QWidget):
         if key in self.driveKeysPressed:
             self.driveKeysPressed.remove(key)
 
+        if key in self.actuatorKeysPressed:
+            self.actuatorKeysPressed.remove(key)
+
+        if key in self.bucketKeysPressed:
+            self.bucketKeysPressed.remove(key)
+
         # Driving logic
         if not len(self.driveKeysPressed):
             if key == QtCore.Qt.Key_W:
@@ -214,6 +261,33 @@ class Window(QWidget):
                 subMessages = {'l': 0, 'r': 0}
                 message = messageLib.Message(forwardingPrefix, subMessages).message
                 self.client.sendMessage(message)
+
+        # Actuator logic
+        if not len(self.actuatorKeysPressed):
+            if key == QtCore.Qt.Key_U:
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'a': 0}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            elif key == QtCore.Qt.Key_J:
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'a': 0}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+
+        # Bucket logic
+        if not len(self.bucketKeysPressed):
+            if key == QtCore.Qt.Key_I:
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'b': 0}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+            elif key == QtCore.Qt.Key_K:
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'b': 0}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+
 
     def openConnectionEvent(self):
         self.client.openConnection()
