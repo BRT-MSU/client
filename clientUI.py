@@ -147,7 +147,7 @@ class Window(QWidget):
                     self.driveKeysPressed.append(key)
 
                 forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'l': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
+                subMessages = {'l': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': 1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
                 message = messageLib.Message(forwardingPrefix, subMessages).message
                 self.client.sendMessage(message)
             elif key == QtCore.Qt.Key_D:
@@ -155,7 +155,7 @@ class Window(QWidget):
                     self.driveKeysPressed.append(key)
 
                 forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'l': MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
+                subMessages = {'l': 1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
                 message = messageLib.Message(forwardingPrefix, subMessages).message
                 self.client.sendMessage(message)
 
@@ -326,7 +326,7 @@ class Window(QWidget):
             self.activateAutonomy()
 
     def activateAutonomy(self):
-        self.client.sendMessage('Activate autonomy.')
+        self.client.sendMessage(messageLib.forwardingPrefix.CONTROLLER + messageLib.AUTONOMOY_ACTIVATION_MESSAGE)
 
         self.activateAutonomyButton.setEnabled(False)
         self.deactivateAutonomyButton.setEnabled(True)
@@ -340,7 +340,7 @@ class Window(QWidget):
             self.deactivateAutonomy()
 
     def deactivateAutonomy(self):
-        self.client.sendMessage('Deactivate autonomy.')
+        self.client.sendMessage(messageLib.forwardingPrefix.CONTROLLER + messageLib.AUTONOMY_DEACTIVATION_MESSAGE)
 
         self.activateAutonomyButton.setEnabled(True)
         self.deactivateAutonomyButton.setEnabled(False)
