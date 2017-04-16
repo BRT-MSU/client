@@ -1,9 +1,13 @@
 import enum
 
+AUTONOMOY_ACTIVATION_MESSAGE = 'activate'
+AUTONOMY_DEACTIVATION_MESSAGE = 'deactivate'
+
 class forwardingPrefix(enum.Enum):
     CLIENT = '-c'
     TANGO = '-t'
     MOTOR = '-m'
+    CONTROLLER = '-p'
     DEBUG = '-d'
     STATUS = '-s'
 

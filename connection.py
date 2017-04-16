@@ -3,6 +3,7 @@ import socket
 import threading
 import Queue
 import enum
+import sys
 
 SERVER_IP_ADDRESS = '0.0.0.0'
 SERVER_PORT_NUMBER = 8888
@@ -69,6 +70,7 @@ class Connection():
             clientSocket.connect((self.clientIPAddress, self.clientPortNumber))
             print 'Client sent:', message
             clientSocket.send(message + '\n')
+            print 'Client sent message that was of length:', sys.getsizeof(message + '\n')
             clientSocket.shutdown(socket.SHUT_WR)
             clientSocket.close()
         except socket.error:
