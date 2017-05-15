@@ -25,8 +25,9 @@ class motor(enum.Enum):
     SERVO = 3
 
 # Default motor speeds {DRIVE_MOTORS, ACTUATOR, BUCKET, SERVO}
-MOTOR_SPEEDS = {0: 25, 1: 25, 2: 25, 3: 25}
+MOTOR_SPEEDS = {0: 25, 1: 100, 2: 40, 3: 0}
 MAX_MOTOR_SPEED = 100
+MAX_SERVO_ANGLE = 180
 
 class Window(QWidget):
     def __init__(self, client):
@@ -41,6 +42,8 @@ class Window(QWidget):
         self.bucketKeysPressed = []
 
         self.motorSpeedToAdjust = motor.DRIVE_MOTORS
+
+        self.servoAngle = 0
 
         self.initUI()
         
@@ -169,9 +172,6 @@ class Window(QWidget):
             elif key == QtCore.Qt.Key_3:
                 self.motorSpeedToAdjust = motor.BUCKET
                 print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
-            elif key == QtCore.Qt.Key_4:
-                self.motorSpeedToAdjust = motor.SERVO
-                print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
 
             # Actuator logic
             elif key == QtCore.Qt.Key_U:
@@ -206,6 +206,24 @@ class Window(QWidget):
 
                 forwardingPrefix = messageLib.forwardingPrefix.MOTOR
                 subMessages = {'b': -1 * MOTOR_SPEEDS[motor.BUCKET]}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+
+        # Servo logic
+        if key == QtCore.Qt.Key_O:
+            if self.servoAngle < MAX_SERVO_ANGLE:
+                self.servoAngle += 1
+                print 'servoAngle:', self.servoAngle
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'s': self.servoAngle}
+                message = messageLib.Message(forwardingPrefix, subMessages).message
+                self.client.sendMessage(message)
+        elif key == QtCore.Qt.Key_L:
+            if self.servoAngle > 0:
+                self.servoAngle -= 1
+                print 'servoAngle:', self.servoAngle
+                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
+                subMessages = {'s': self.servoAngle}
                 message = messageLib.Message(forwardingPrefix, subMessages).message
                 self.client.sendMessage(message)
 
