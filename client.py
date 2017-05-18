@@ -1,8 +1,11 @@
 import argparse
+import re
 import threading
+import sys
 
 import connection
 import clientUI
+import messageLib
 
 CLIENT_IP_ADDRESS = '0.0.0.0'
 CLIENT_PORT_NUMBER = 1123
@@ -15,6 +18,9 @@ CONTROLLER_TO_TANGO_PORT_NUMBER = 2134
 TANGO_IP_ADDRESS = '192.168.1.4'
 TANGO_PORT_NUMBER = 5589
 
+gyroRotationRegex = re.compile('-ca([\s\S]+)b([\s\S]+)')
+
+
 class Client():
     def __init__(self, serverIPAddress, serverPortNumber, \
                  clientIPAddress, clientPortNumber, bufferSize):
@@ -24,11 +30,9 @@ class Client():
         self.clientPortNumber = clientPortNumber
         self.bufferSize = bufferSize
 
-        self.messageReceived = None
-
-        self.clientUI = clientUI.main(self)
-
         self.connection = None
+
+        clientUI.main(self)
 
     def openConnection(self):
         self.connection = connection.main(self.serverIPAddress, self.serverPortNumber, \
@@ -46,7 +50,9 @@ class Client():
         while True:
             messageReceived = self.connection.getMessage()
             if messageReceived is not None:
-                self.messageReceived = messageReceived
+                if re.match(gyroRotationRegex, messageReceived):
+                    print 'arm rotation:', re.match(gyroRotationRegex, messageReceived).group(1), \
+                        'bucket rotation:', re.match(gyroRotationRegex, messageReceived).group(2)
 
     def closeConnection(self):
         try:

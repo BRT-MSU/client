@@ -1,6 +1,7 @@
 import sys
 import messageLib
 import enum
+import threading
  
 # SIP allows us to select the API we wish to use
 import sip
@@ -18,11 +19,13 @@ sip.setapi('QVariant', 2)
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets
 
+
 class motor(enum.Enum):
     DRIVE_MOTORS = 0
     ACTUATOR = 1
     BUCKET = 2
     SERVO = 3
+
 
 # Default motor speeds {DRIVE_MOTORS, ACTUATOR, BUCKET, SERVO}
 MOTOR_SPEEDS = {0: 25, 1: 100, 2: 40, 3: 0}
@@ -48,13 +51,13 @@ class Window(QWidget):
         self.initUI()
         
     def initUI(self):
-        # Client status
-        clientStatusLabel = QtWidgets.QLabel('Client status:')
-        self.clientStatusBar = QtWidgets.QStatusBar()
-
-        # Server status
-        serverStatusLabel = QtWidgets.QLabel('Server Status:')
-        self.serverStatusBar = QtWidgets.QStatusBar()
+        # # Arm gyroscope rotation
+        # armRotationStatusLabel = QtWidgets.QLabel('Arm Rotation:')
+        # self.armRotationStatusBar = QtWidgets.QStatusBar()
+        #
+        # # Bucket gyroscope rotation
+        # bucketRotationStatusLabel = QtWidgets.QLabel('Bucket Rotation:')
+        # self.bucketRotationStatusBar = QtWidgets.QStatusBar()
 
         # Button to open the connection
         self.openConnectionButton = QtWidgets.QPushButton('Open Connection', self)
@@ -82,11 +85,11 @@ class Window(QWidget):
         grid =  QtWidgets.QGridLayout()
         grid.setSpacing(10)
 
-        grid.addWidget(clientStatusLabel, 1, 0)
-        grid.addWidget(self.clientStatusBar, 1, 1)
-
-        grid.addWidget(serverStatusLabel, 2, 0)
-        grid.addWidget(self.serverStatusBar, 2, 1)
+        # grid.addWidget(armRotationStatusLabel, 1, 0)
+        # grid.addWidget(self.armRotationStatusBar, 1, 1)
+        #
+        # grid.addWidget(bucketRotationStatusLabel, 2, 0)
+        # grid.addWidget(self.bucketRotationStatusBar, 2, 1)
 
         hBox0 = QtWidgets.QHBoxLayout()
         hBox0.addStretch(1)
@@ -363,6 +366,10 @@ class Window(QWidget):
         self.activateAutonomyButton.setEnabled(True)
         self.deactivateAutonomyButton.setEnabled(False)
 
+    def updateRotationStatus(self, message):
+            self.armRotationStatusBar.showMessage(message)
+            self.bucketRotationStatusBar.showMessage(message)
+
     def closeEvent(self, QCloseEvent):
         quitMessage = 'Are you sure you want to exit the client?'
         reply = QtWidgets.QMessageBox.question(self, 'Message', \
@@ -371,17 +378,16 @@ class Window(QWidget):
         if reply == QtWidgets.QMessageBox.Yes:
             if self.deactivateAutonomyButton.isEnabled():
                 self.deactivateAutonomy()
-
             self.client.shutdown()
             QCloseEvent.accept()
         else:
             QCloseEvent.ignore()
 
+
 def main(client):
     app = QApplication(sys.argv)
     window = Window(client)
     sys.exit(app.exec_())
-    return window
 
 if __name__ == '__main__':
     main()
