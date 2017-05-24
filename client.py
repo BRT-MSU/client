@@ -51,8 +51,12 @@ class Client():
             messageReceived = self.connection.getMessage()
             if messageReceived is not None:
                 if re.match(gyroRotationRegex, messageReceived):
-                    print 'arm rotation:', re.match(gyroRotationRegex, messageReceived).group(1), \
-                        'bucket rotation:', re.match(gyroRotationRegex, messageReceived).group(2)
+                    print '\n'
+                    print '---------------------------------------------'
+                    print 'arm rotation: ' + str(re.match(gyroRotationRegex, messageReceived).group(1)) + \
+                        'bucket rotation: ' + re.match(gyroRotationRegex, messageReceived).group(2) + '\r' + \
+                        '---------------------------------------------'
+                    print '\n'
 
     def closeConnection(self):
         try:
