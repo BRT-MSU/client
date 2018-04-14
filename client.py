@@ -1,106 +1,95 @@
 import argparse
-import re
 import threading
-import sys
 
-import connection
+from connection import Connection
 import clientUI
-import messageLib
 
-CLIENT_IP_ADDRESS = '0.0.0.0'
-CLIENT_PORT_NUMBER = 1123
+DEFAULT_CLIENT_IP_ADDRESS = '0.0.0.0'
+DEFAULT_CLIENT_PORT_NUMBER = 1123
 
-# Commented out for testing purposes only
-CONTROLLER_IP_ADDRESS = '192.168.1.3'
-CONTROLLER_TO_CLIENT_PORT_NUMBER = 5813
-CONTROLLER_TO_TANGO_PORT_NUMBER = 2134
+DEFAULT_CONTROLLER_IP_ADDRESS = '192.168.1.3'
+DEFAULT_CONTROLLER_PORT_NUMBER = 5813
 
-TANGO_IP_ADDRESS = '192.168.1.4'
-TANGO_PORT_NUMBER = 5589
-
-gyroRotationRegex = re.compile('-ca([\s\S]+)b([\s\S]+)')
+DEFAULT_BUFFER_SIZE = 1024
 
 
-class Client():
-    def __init__(self, serverIPAddress, serverPortNumber, \
-                 clientIPAddress, clientPortNumber, bufferSize):
-        self.serverIPAddress = serverIPAddress
-        self.serverPortNumber = serverPortNumber
-        self.clientIPAddress = clientIPAddress
-        self.clientPortNumber = clientPortNumber
-        self.bufferSize = bufferSize
+class Client:
+    def __init__(self, client_ip_address, client_port_number,
+                 controller_ip_address, controller_port_number,
+                 buffer_size):
+        self.client_ip_address = client_ip_address
+        self.client_port_number = client_port_number
+
+        self.controller_ip_address = controller_ip_address
+        self.controller_port_number = controller_port_number
+
+        self.buffer_size = buffer_size
 
         self.connection = None
+        self.connection_thread = None
 
         clientUI.main(self)
 
-    def openConnection(self):
-        self.connection = connection.main(self.serverIPAddress, self.serverPortNumber, \
-                                          self.clientIPAddress, self.clientPortNumber, \
-                                          self.bufferSize)
+    def open_connection(self):
+        self.connection = Connection(self.client_ip_address, self.client_port_number,
+                                     self.controller_ip_address, self.controller_port_number,
+                                     self.buffer_size)
 
-        self.connectionThread = threading.Thread(name='connectionThread', target=self.run)
-        self.connectionThread.daemon = True
-        self.connectionThread.start()
+        self.connection_thread = threading.Thread(name='connectionThread', target=self.run)
+        self.connection_thread.daemon = True
+        self.connection_thread.start()
 
-    def sendMessage(self, messageToSend):
-        self.connection.send(messageToSend)
+    def send_message(self, message):
+        self.connection.send(message)
 
     def run(self):
         while True:
-            messageReceived = self.connection.getMessage()
-            if messageReceived is not None:
-                if re.match(gyroRotationRegex, messageReceived):
-                    print '\n'
-                    print '---------------------------------------------'
-                    print 'arm rotation: ' + str(re.match(gyroRotationRegex, messageReceived).group(1)) + \
-                        'bucket rotation: ' + re.match(gyroRotationRegex, messageReceived).group(2) + '\r' + \
-                        '---------------------------------------------'
-                    print '\n'
+            message_received = self.connection.get_message()
+            if message_received is not None:
+                pass
 
-    def closeConnection(self):
+    def close_connection(self):
         try:
-            self.connectionThread.stop = True
-            self.connection.closeServerSocket()
+            self.connection_thread.stop = True
+            self.connection.close_local_socket()
         except AttributeError:
             pass
 
     def shutdown(self):
         try:
-            self.connectionThread.stop = True
-            self.connection.closeServerSocket()
+            self.connection_thread.stop = True
+            self.connection.close_local_socket()
         except AttributeError:
             pass
 
-def main(serverIPAddress=connection.SERVER_IP_ADDRESS, serverPortNumber=connection.SERVER_PORT_NUMBER, \
-            clientIPAddress=connection.CLIENT_IP_ADDRESS, clientPortNumber=connection.CLIENT_PORT_NUMBER, \
-            bufferSize=connection.DEFAULT_BUFFER_SIZE):
-        return Client(serverIPAddress, serverPortNumber, clientIPAddress, clientPortNumber, bufferSize)
+
+def main(client_ip_address, client_port_number,
+         controller_ip_address, controller_port_number,
+         buffer_size):
+        return Client(client_ip_address, client_port_number,
+                      controller_ip_address, controller_port_number,
+                      buffer_size)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-sip', '--serverIPAddress', help='server IP address argument', \
-                        required=False, default=CLIENT_IP_ADDRESS)
-    parser.add_argument('-spn', '--serverPortNumber', help='server port number argument', \
-                        required=False, default=str(CLIENT_PORT_NUMBER))
-    parser.add_argument('-cip', '--clientIPAddress', help='client IP address argument', \
-                        required=False, default=CONTROLLER_IP_ADDRESS)
-    parser.add_argument('-cpn', '--clientPortNumber', help='client port number argument', \
-                        required=False, default=str(CONTROLLER_TO_CLIENT_PORT_NUMBER))
-    parser.add_argument('-bs', '--bufferSize', help='buffer size argument', \
-                        required=False, default=str(connection.DEFAULT_BUFFER_SIZE))
+    parser.add_argument('-cip', '--clientIPAddress', help='client IP address',
+                        required=False, default=DEFAULT_CLIENT_IP_ADDRESS)
+    parser.add_argument('-cpn', '--clientPortNumber', help='client port number',
+                        required=False, type=int, default=str(DEFAULT_CLIENT_PORT_NUMBER))
+    parser.add_argument('-kip', '--controllerIPAddress', help='controller IP address',
+                        required=False, default=DEFAULT_CONTROLLER_IP_ADDRESS)
+    parser.add_argument('-kpn', '--controllerPortNumber', help='controller port number',
+                        required=False, type=int, default=str(DEFAULT_CONTROLLER_PORT_NUMBER))
+    parser.add_argument('-bs', '--bufferSize', help='buffer size',
+                        required=False, type=int, default=str(DEFAULT_BUFFER_SIZE))
     args = parser.parse_args()
 
-    serverIPAddress = args.serverIPAddress
-    serverPortNumber = int(args.serverPortNumber)
-    clientIPAddress = args.clientIPAddress
-    clientPortNumber = int(args.clientPortNumber)
-    bufferSize = int(args.bufferSize)
+    print 'clientIpAddress:', args.clientIPAddress
+    print 'clientPortNumber:', args.clientPortNumber
+    print 'controllerIpAddress:', args.controllerIPAddress
+    print 'controllerPortNumber:', args.controllerPortNumber
+    print 'bufferSize:', args.bufferSize
 
-    print 'serverIpAddress:', serverIPAddress
-    print 'serverPortNumber:', serverPortNumber
-    print 'clientIpAddress:', clientIPAddress
-    print 'clientPortNumber:', clientPortNumber
-    print 'bufferSize:', bufferSize
-
-    main(serverIPAddress, serverPortNumber, clientIPAddress, clientPortNumber, bufferSize)
+    main(args.clientIPAddress, args.clientPortNumber,
+         args.controllerIPAddress, args.controllerPortNumber,
+         args.bufferSize)

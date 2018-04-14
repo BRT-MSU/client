@@ -1,12 +1,13 @@
 import sys
-import messageLib
+from message import *
 import enum
-import threading
- 
-# SIP allows us to select the API we wish to use
+
 import sip
+
+from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5 import Qt, QtCore, QtGui, QtWidgets
  
-# use the more modern PyQt API (not enabled by default in Python 2.x);
+# Use the more modern PyQt API (not enabled by default in Python 2.x);   
 # must precede importing any module that provides the API specified
 sip.setapi('QDate', 2)
 sip.setapi('QDateTime', 2)
@@ -16,21 +17,18 @@ sip.setapi('QTime', 2)
 sip.setapi('QUrl', 2)
 sip.setapi('QVariant', 2)
 
-from PyQt5.QtWidgets import QApplication, QWidget
-from PyQt5 import Qt, QtCore, QtGui, QtWidgets
+# Default motor speeds {DRIVE_MOTORS, ACTUATOR, BUCKET}
+MOTOR_SPEEDS = {0: 25, 1: 100, 2: 40}
+
+MAX_MOTOR_SPEED = 100
+MAX_SERVO_ANGLE = 180
 
 
-class motor(enum.Enum):
+class Motor(enum.Enum):
     DRIVE_MOTORS = 0
     ACTUATOR = 1
     BUCKET = 2
-    SERVO = 3
 
-
-# Default motor speeds {DRIVE_MOTORS, ACTUATOR, BUCKET, SERVO}
-MOTOR_SPEEDS = {0: 25, 1: 100, 2: 40, 3: 0}
-MAX_MOTOR_SPEED = 100
-MAX_SERVO_ANGLE = 180
 
 class Window(QWidget):
     def __init__(self, client):
@@ -38,76 +36,60 @@ class Window(QWidget):
 
         self.client = client
 
-        self.driveKeysPressed = []
+        self.drive_keys_pressed = []
 
-        self.actuatorKeysPressed = []
+        self.actuator_keys_pressed = []
 
-        self.bucketKeysPressed = []
+        self.bucket_keys_pressed = []
 
-        self.motorSpeedToAdjust = motor.DRIVE_MOTORS
+        self.motor_speed_to_adjust = Motor.DRIVE_MOTORS.value
 
-        self.servoAngle = 0
-
-        self.initUI()
+        self.init_ui()
         
-    def initUI(self):
-        # # Arm gyroscope rotation
-        # armRotationStatusLabel = QtWidgets.QLabel('Arm Rotation:')
-        # self.armRotationStatusBar = QtWidgets.QStatusBar()
-        #
-        # # Bucket gyroscope rotation
-        # bucketRotationStatusLabel = QtWidgets.QLabel('Bucket Rotation:')
-        # self.bucketRotationStatusBar = QtWidgets.QStatusBar()
-
+    def init_ui(self):
         # Button to open the connection
-        self.openConnectionButton = QtWidgets.QPushButton('Open Connection', self)
-        self.openConnectionButton.clicked.connect(self.openConnectionEvent)
-        self.openConnectionButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.open_connection_button = QtWidgets.QPushButton('Open Connection', self)
+        self.open_connection_button.clicked.connect(self.open_connection_event)
+        self.open_connection_button.setFocusPolicy(QtCore.Qt.NoFocus)
 
         # Button to close the connection
-        self.closeConnectionButton = QtWidgets.QPushButton('Close Connection', self)
-        self.closeConnectionButton.clicked.connect(self.closeConnectionEvent)
-        self.closeConnectionButton.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.closeConnectionButton.setEnabled(False)
+        self.close_connection_button = QtWidgets.QPushButton('Close Connection', self)
+        self.close_connection_button.clicked.connect(self.close_connection_event)
+        self.close_connection_button.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.close_connection_button.setEnabled(False)
 
         # Button to activate autonomy
-        self.activateAutonomyButton = QtWidgets.QPushButton('Activate Autonomy', self)
-        self.activateAutonomyButton.clicked.connect(self.activateAutonomyEvent)
-        self.activateAutonomyButton.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.activateAutonomyButton.setEnabled(False)
+        self.activate_autonomy_button = QtWidgets.QPushButton('Activate Autonomy', self)
+        self.activate_autonomy_button.clicked.connect(self.activate_autonomy_event)
+        self.activate_autonomy_button.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.activate_autonomy_button.setEnabled(False)
 
         # Button to deactivate autonomy
-        self.deactivateAutonomyButton = QtWidgets.QPushButton('Deactivate Autonomy', self)
-        self.deactivateAutonomyButton.clicked.connect(self.deactivateAutonomyEvent)
-        self.deactivateAutonomyButton.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.deactivateAutonomyButton.setEnabled(False)
+        self.deactivate_autonomy_button = QtWidgets.QPushButton('Deactivate Autonomy', self)
+        self.deactivate_autonomy_button.clicked.connect(self.deactivate_autonomy_event)
+        self.deactivate_autonomy_button.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.deactivate_autonomy_button.setEnabled(False)
 
         grid =  QtWidgets.QGridLayout()
         grid.setSpacing(10)
 
-        # grid.addWidget(armRotationStatusLabel, 1, 0)
-        # grid.addWidget(self.armRotationStatusBar, 1, 1)
-        #
-        # grid.addWidget(bucketRotationStatusLabel, 2, 0)
-        # grid.addWidget(self.bucketRotationStatusBar, 2, 1)
+        h_box_0 = QtWidgets.QHBoxLayout()
+        h_box_0.addStretch(1)
+        h_box_0.addWidget(self.open_connection_button)
+        h_box_0.addWidget(self.close_connection_button)
 
-        hBox0 = QtWidgets.QHBoxLayout()
-        hBox0.addStretch(1)
-        hBox0.addWidget(self.openConnectionButton)
-        hBox0.addWidget(self.closeConnectionButton)
+        h_box_1 = QtWidgets.QHBoxLayout()
+        h_box_1.addStretch(1)
+        h_box_1.addWidget(self.activate_autonomy_button)
+        h_box_1.addWidget(self.deactivate_autonomy_button)
 
-        hBox1 = QtWidgets.QHBoxLayout()
-        hBox1.addStretch(1)
-        hBox1.addWidget(self.activateAutonomyButton)
-        hBox1.addWidget(self.deactivateAutonomyButton)
-
-        vbox = QtWidgets.QVBoxLayout()
-        vbox.addStretch(1)
-        vbox.addLayout(grid)
-        vbox.addLayout(hBox0)
-        vbox.addLayout(hBox1)
+        v_box = QtWidgets.QVBoxLayout()
+        v_box.addStretch(1)
+        v_box.addLayout(grid)
+        v_box.addLayout(h_box_0)
+        v_box.addLayout(h_box_1)
         
-        self.setLayout(vbox)
+        self.setLayout(v_box)
         
         self.resize(500, 400)
         self.center()
@@ -124,8 +106,8 @@ class Window(QWidget):
         self.move(qr.topLeft())
 
     def keyPressEvent(self, event):
-        if self.openConnectionButton.isEnabled() \
-                or self.deactivateAutonomyButton.isEnabled():
+        if self.open_connection_button.isEnabled() \
+                or self.deactivate_autonomy_button.isEnabled():
             return
 
         key = event.key()
@@ -133,251 +115,243 @@ class Window(QWidget):
         if not event.isAutoRepeat():
             # Driving logic
             if key == QtCore.Qt.Key_W:
-                if key not in self.driveKeysPressed:
-                    self.driveKeysPressed.append(key)
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
 
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'l': MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'l': MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value],
+                                'r': MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value]}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
             elif key == QtCore.Qt.Key_S:
-                if key not in self.driveKeysPressed:
-                    self.driveKeysPressed.append(key)
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
 
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'l': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'l': -1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value],
+                                'r': -1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value]}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
             elif key == QtCore.Qt.Key_A:
-                if key not in self.driveKeysPressed:
-                    self.driveKeysPressed.append(key)
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
 
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'l': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': 1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'l': -1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value],
+                                'r': 1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value]}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
             elif key == QtCore.Qt.Key_D:
-                if key not in self.driveKeysPressed:
-                    self.driveKeysPressed.append(key)
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
 
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'l': 1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS], 'r': -1 * MOTOR_SPEEDS[motor.DRIVE_MOTORS]}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'l': 1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value],
+                                'r': -1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value]}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
 
             # Motor speed adjustment mode logic
             elif key == QtCore.Qt.Key_1:
-                self.motorSpeedToAdjust = motor.DRIVE_MOTORS
-                print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
+                self.motor_speed_to_adjust = Motor.DRIVE_MOTORS.value
+                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
             elif key == QtCore.Qt.Key_2:
-                self.motorSpeedToAdjust = motor.ACTUATOR
-                print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
+                self.motor_speed_to_adjust = Motor.ACTUATOR.value
+                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
             elif key == QtCore.Qt.Key_3:
-                self.motorSpeedToAdjust = motor.BUCKET
-                print 'Motor speed adjustment mode:', str(self.motorSpeedToAdjust)
+                self.motor_speed_to_adjust = Motor.BUCKET.value
+                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
 
             # Actuator logic
             elif key == QtCore.Qt.Key_U:
-                if key not in self.actuatorKeysPressed:
-                    self.actuatorKeysPressed.append(key)
+                if key not in self.actuator_keys_pressed:
+                    self.actuator_keys_pressed.append(key)
 
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'a': MOTOR_SPEEDS[motor.ACTUATOR]}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'a': MOTOR_SPEEDS[Motor.ACTUATOR.value]}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
             elif key == QtCore.Qt.Key_J:
-                if key not in self.actuatorKeysPressed:
-                    self.actuatorKeysPressed.append(key)
+                if key not in self.actuator_keys_pressed:
+                    self.actuator_keys_pressed.append(key)
 
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'a': -1 * MOTOR_SPEEDS[motor.ACTUATOR]}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'a': -1 * MOTOR_SPEEDS[Motor.ACTUATOR.value]}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
 
             # Bucket logic
             elif key == QtCore.Qt.Key_I:
-                if key not in self.bucketKeysPressed:
-                    self.bucketKeysPressed.append(key)
+                if key not in self.bucket_keys_pressed:
+                    self.bucket_keys_pressed.append(key)
 
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'b': MOTOR_SPEEDS[motor.BUCKET]}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'b': MOTOR_SPEEDS[Motor.BUCKET.value]}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
             elif key == QtCore.Qt.Key_K:
-                if key not in self.bucketKeysPressed:
-                    self.bucketKeysPressed.append(key)
+                if key not in self.bucket_keys_pressed:
+                    self.bucket_keys_pressed.append(key)
 
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'b': -1 * MOTOR_SPEEDS[motor.BUCKET]}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
-
-        # Servo logic
-        if key == QtCore.Qt.Key_O:
-            if self.servoAngle < MAX_SERVO_ANGLE:
-                self.servoAngle += 1
-                print 'servoAngle:', self.servoAngle
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'s': self.servoAngle}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
-        elif key == QtCore.Qt.Key_L:
-            if self.servoAngle > 0:
-                self.servoAngle -= 1
-                print 'servoAngle:', self.servoAngle
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'s': self.servoAngle}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'b': -1 * MOTOR_SPEEDS[Motor.BUCKET.value]}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
 
         # Motor speed adjustment logic
         if key == QtCore.Qt.Key_Up:
-            if MOTOR_SPEEDS[self.motorSpeedToAdjust] < MAX_MOTOR_SPEED:
-                MOTOR_SPEEDS[self.motorSpeedToAdjust] += 1
-                print MOTOR_SPEEDS[self.motorSpeedToAdjust]
-                if len(self.driveKeysPressed):
-                    self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.driveKeysPressed[-1], QtCore.Qt.NoModifier))
+            if MOTOR_SPEEDS[self.motor_speed_to_adjust] < MAX_MOTOR_SPEED:
+                MOTOR_SPEEDS[self.motor_speed_to_adjust] += 1
+                print MOTOR_SPEEDS[self.motor_speed_to_adjust]
+                if len(self.drive_keys_pressed):
+                    self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1], 
+                                                    QtCore.Qt.NoModifier))
         elif key == QtCore.Qt.Key_Down:
-            if MOTOR_SPEEDS[self.motorSpeedToAdjust] > 0:
-                MOTOR_SPEEDS[self.motorSpeedToAdjust] -= 1
-                print MOTOR_SPEEDS[self.motorSpeedToAdjust]
-                if len(self.driveKeysPressed):
-                    self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.driveKeysPressed[-1], QtCore.Qt.NoModifier))
+            if MOTOR_SPEEDS[self.motor_speed_to_adjust] > 0:
+                MOTOR_SPEEDS[self.motor_speed_to_adjust] -= 1
+                print MOTOR_SPEEDS[self.motor_speed_to_adjust]
+                if len(self.drive_keys_pressed):
+                    self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1], 
+                                                    QtCore.Qt.NoModifier))
 
     def keyReleaseEvent(self, event):
-        if event.isAutoRepeat() or self.openConnectionButton.isEnabled() \
-                or self.deactivateAutonomyButton.isEnabled():
+        if event.isAutoRepeat() or self.open_connection_button.isEnabled() \
+                or self.deactivate_autonomy_button.isEnabled():
             return
 
         key = event.key()
 
-        if key in self.driveKeysPressed:
-            self.driveKeysPressed.remove(key)
+        if key in self.drive_keys_pressed:
+            self.drive_keys_pressed.remove(key)
 
-        if key in self.actuatorKeysPressed:
-            self.actuatorKeysPressed.remove(key)
+        if key in self.actuator_keys_pressed:
+            self.actuator_keys_pressed.remove(key)
 
-        if key in self.bucketKeysPressed:
-            self.bucketKeysPressed.remove(key)
+        if key in self.bucket_keys_pressed:
+            self.bucket_keys_pressed.remove(key)
 
         # Driving logic
-        if not len(self.driveKeysPressed):
+        if not len(self.drive_keys_pressed):
             if key == QtCore.Qt.Key_W:
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'l': 0, 'r': 0}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'l': 0, 'r': 0}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
             elif key == QtCore.Qt.Key_S:
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'l': 0, 'r': 0}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'l': 0, 'r': 0}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
             elif key == QtCore.Qt.Key_A:
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'l': 0, 'r': 0}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'l': 0, 'r': 0}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
             elif key == QtCore.Qt.Key_D:
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'l': 0, 'r': 0}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'l': 0, 'r': 0}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
 
         # Actuator logic
-        if not len(self.actuatorKeysPressed):
+        if not len(self.actuator_keys_pressed):
             if key == QtCore.Qt.Key_U:
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'a': 0}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'a': 0}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
             elif key == QtCore.Qt.Key_J:
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'a': 0}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'a': 0}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
 
         # Bucket logic
-        if not len(self.bucketKeysPressed):
+        if not len(self.bucket_keys_pressed):
             if key == QtCore.Qt.Key_I:
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'b': 0}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'b': 0}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
             elif key == QtCore.Qt.Key_K:
-                forwardingPrefix = messageLib.forwardingPrefix.MOTOR
-                subMessages = {'b': 0}
-                message = messageLib.Message(forwardingPrefix, subMessages).message
-                self.client.sendMessage(message)
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'b': 0}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
 
 
-    def openConnectionEvent(self):
-        self.client.openConnection()
+    def open_connection_event(self):
+        self.client.open_connection()
 
-        self.openConnectionButton.setEnabled(False)
-        self.closeConnectionButton.setEnabled(True)
+        self.open_connection_button.setEnabled(False)
+        self.close_connection_button.setEnabled(True)
 
-        self.activateAutonomyButton.setEnabled(True)
+        self.activate_autonomy_button.setEnabled(True)
 
-    def closeConnectionEvent(self):
-        if self.deactivateAutonomyButton.isEnabled():
-            autonomyMessage = 'Please deactivate autonomy first.'
-            QtWidgets.QMessageBox.question(self, 'Message', \
-                                           autonomyMessage, QtWidgets.QMessageBox.Ok)
+    def close_connection_event(self):
+        if self.deactivate_autonomy_button.isEnabled():
+            autonomy_message = 'Please deactivate autonomy first.'
+            QtWidgets.QMessageBox.question(self, 'Message',
+                                           autonomy_message, QtWidgets.QMessageBox.Ok)
             return
 
-        quitMessage = 'Are you sure you want to close the connection?'
-        reply = QtWidgets.QMessageBox.question(self, 'Message', \
-                                               quitMessage, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+        quit_message = 'Are you sure you want to close the connection?'
+        reply = QtWidgets.QMessageBox.question(self, 'Message',
+                                               quit_message,
+                                               QtWidgets.QMessageBox.No,
+                                               QtWidgets.QMessageBox.Yes)
 
         if reply == QtWidgets.QMessageBox.Yes:
-            self.client.closeConnection()
+            self.client.close_connection()
 
-            self.openConnectionButton.setEnabled(True)
-            self.closeConnectionButton.setEnabled(False)
+            self.open_connection_button.setEnabled(True)
+            self.close_connection_button.setEnabled(False)
 
-            self.activateAutonomyButton.setEnabled(False)
-            self.deactivateAutonomyButton.setEnabled(False)
+            self.activate_autonomy_button.setEnabled(False)
+            self.deactivate_autonomy_button.setEnabled(False)
 
-    def activateAutonomyEvent(self):
-        quit_msg = 'Are you sure you want to activate autonomy?'
-        reply = QtWidgets.QMessageBox.question(self, 'Message', \
-                                               quit_msg, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+    def activate_autonomy_event(self):
+        quit_message = 'Are you sure you want to activate autonomy?'
+        reply = QtWidgets.QMessageBox.question(self, 'Message',
+                                               quit_message,
+                                               QtWidgets.QMessageBox.No,
+                                               QtWidgets.QMessageBox.Yes)
 
         if reply == QtWidgets.QMessageBox.Yes:
-            self.activateAutonomy()
+            self.activate_autonomy()
 
-    def activateAutonomy(self):
-        self.client.sendMessage(messageLib.forwardingPrefix.CONTROLLER + messageLib.AUTONOMOY_ACTIVATION_MESSAGE)
+    def activate_autonomy(self):
+        self.client.send_message(ForwardingPrefix.CONTROLLER.value + AUTONOMY_ACTIVATION_MESSAGE)
 
-        self.activateAutonomyButton.setEnabled(False)
-        self.deactivateAutonomyButton.setEnabled(True)
+        self.activate_autonomy_button.setEnabled(False)
+        self.deactivate_autonomy_button.setEnabled(True)
 
-    def deactivateAutonomyEvent(self):
+    def deactivate_autonomy_event(self):
         deactivateMessage = 'Are you sure you want to deactivate autonomy?'
-        reply = QtWidgets.QMessageBox.question(self, 'Message', \
-                                               deactivateMessage, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+        reply = QtWidgets.QMessageBox.question(self, 'Message',
+                                               deactivateMessage,
+                                               QtWidgets.QMessageBox.No,
+                                               QtWidgets.QMessageBox.Yes)
 
         if reply == QtWidgets.QMessageBox.Yes:
-            self.deactivateAutonomy()
+            self.deactivate_autonomy()
 
-    def deactivateAutonomy(self):
-        self.client.sendMessage(messageLib.forwardingPrefix.CONTROLLER + messageLib.AUTONOMY_DEACTIVATION_MESSAGE)
+    def deactivate_autonomy(self):
+        self.client.send_message(ForwardingPrefix.CONTROLLER.value + AUTONOMY_DEACTIVATION_MESSAGE)
 
-        self.activateAutonomyButton.setEnabled(True)
-        self.deactivateAutonomyButton.setEnabled(False)
-
-    def updateRotationStatus(self, message):
-            self.armRotationStatusBar.showMessage(message)
-            self.bucketRotationStatusBar.showMessage(message)
+        self.activate_autonomy_button.setEnabled(True)
+        self.deactivate_autonomy_button.setEnabled(False)
 
     def closeEvent(self, QCloseEvent):
-        quitMessage = 'Are you sure you want to exit the client?'
-        reply = QtWidgets.QMessageBox.question(self, 'Message', \
-                                               quitMessage, QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
+        quit_message = 'Are you sure you want to exit the client?'
+        reply = QtWidgets.QMessageBox.question(self, 'Message',
+                                               quit_message,
+                                               QtWidgets.QMessageBox.No,
+                                               QtWidgets.QMessageBox.Yes)
 
         if reply == QtWidgets.QMessageBox.Yes:
-            if self.deactivateAutonomyButton.isEnabled():
-                self.deactivateAutonomy()
+            if self.deactivate_autonomy_button.isEnabled():
+                self.deactivate_autonomy()
             self.client.shutdown()
             QCloseEvent.accept()
         else:
