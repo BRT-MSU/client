@@ -18,10 +18,9 @@ sip.setapi('QUrl', 2)
 sip.setapi('QVariant', 2)
 
 # Default motor speeds {DRIVE_MOTORS, ACTUATOR, BUCKET}
-MOTOR_SPEEDS = {0: 25, 1: 100, 2: 40}
+MOTOR_SPEEDS = {0: 100, 1: 100, 2: 100}
 
 MAX_MOTOR_SPEED = 100
-MAX_SERVO_ANGLE = 180
 
 
 class Motor(enum.Enum):
