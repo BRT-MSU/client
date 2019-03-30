@@ -1,7 +1,7 @@
 import argparse
 import threading
 import socket
-import Queue
+import queue
 import enum
 
 DEFAULT_LOCAL_IP_ADDRESS = '0.0.0.0'
@@ -37,7 +37,7 @@ class Connection:
         
         self.buffer_size = buffer_size
 
-        self.local_queue = Queue.Queue()
+        self.local_queue = queue.Queue()
 
         self.local_status = None
         self.local_thread = threading.Thread(name='localThread',
@@ -53,33 +53,33 @@ class Connection:
 
     def initiate_handshake(self):
         self.remote_status = RemoteStatus.HANDSHAKE_INITIALIZED
-        print self.remote_status
+        print(self.remote_status)
         while True:
             remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             remote_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 remote_socket.connect((self.remote_ip_address, self.remote_port_number))
-                remote_socket.send('SYN\n')
+                remote_socket.send(bytes('SYN\n', "utf8"))
 
-                if remote_socket.recv(self.buffer_size) == 'ACK\n':
-                    remote_socket.send('SYN-ACK\n')
+                if remote_socket.recv(self.buffer_size) == bytes('ACK\n', "utf8"):
+                    remote_socket.send(bytes('SYN-ACK\n', "utf8"))
                     remote_socket.shutdown(socket.SHUT_WR)
                     remote_socket.close()
                     self.remote_status = RemoteStatus.HANDSHAKE_SUCCESSFUL
-                    print self.remote_status
+                    print(self.remote_status)
                 else:
                     pass
                 break
             except socket.error:
-                continue
+                print('Socket Error')
 
     def send(self, message):
         remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         remote_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             remote_socket.connect((self.remote_ip_address, self.remote_port_number))
-            print 'Remote socket sent:', message
-            remote_socket.send(message + '\n')
+            print('Remote socket sent:', message)
+            remote_socket.send(bytes(message + '\n', "utf8"))
             remote_socket.shutdown(socket.SHUT_WR)
             remote_socket.close()
         except socket.error:
@@ -98,15 +98,15 @@ class Connection:
         self.local_socket.bind((self.local_ip_address, self.local_port_number))
         self.local_socket.listen(1)
         self.local_status = LocalStatus.SERVER_LISTENING
-        print self.local_status
+        print(self.local_status)
         while True:
             try:
                 connection, address = self.local_socket.accept()
                 message = connection.recv(self.buffer_size)
-                if message == 'SYN\n':
-                    connection.send('ACK\n')
+                if message == bytes('SYN\n', "utf8"):
+                    connection.send(bytes('ACK\n', "utf8"))
                 else:
-                    print 'Local socket received:', message.rstrip()
+                    print('Local socket received:', message.rstrip())
                     self.local_queue.put(message)
             except socket.error:
                 break
@@ -116,7 +116,7 @@ class Connection:
             self.local_socket.shutdown(socket.SHUT_RD)
             self.local_socket.close()
             self.local_status = LocalStatus.SERVER_SHUTDOWN
-            print self.local_status
+            print(self.local_status)
         except socket.error:
             pass
 
@@ -145,11 +145,11 @@ if __name__ == '__main__':
                         required=False, type=int, default=str(DEFAULT_BUFFER_SIZE))
     args = parser.parse_args()
 
-    print 'localIpAddress:', args.localIPAddress
-    print 'localPortNumber:', args.localPortNumber
-    print 'localIpAddress:', args.remoteIPAddress
-    print 'localPortNumber:', args.remotePortNumber
-    print 'buffer_size:', args.buffer_size
+    print('localIpAddress:', args.localIPAddress)
+    print('localPortNumber:', args.localPortNumber)
+    print('localIpAddress:', args.remoteIPAddress)
+    print('localPortNumber:', args.remotePortNumber)
+    print('buffer_size:', args.buffer_size)
 
     main(args.localIPAddress, args.localPortNumber,
          args.remoteIPAddress, args.remotePortNumber,

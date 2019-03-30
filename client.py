@@ -9,7 +9,7 @@ from message import *
 DEFAULT_CLIENT_IP_ADDRESS = '0.0.0.0'
 DEFAULT_CLIENT_PORT_NUMBER = 1123
 
-DEFAULT_CONTROLLER_IP_ADDRESS = '192.168.1.6'
+DEFAULT_CONTROLLER_IP_ADDRESS = '10.152.175.202'
 DEFAULT_CONTROLLER_PORT_NUMBER = 5813
 
 DEFAULT_BUFFER_SIZE = 1024
@@ -68,7 +68,7 @@ class Client:
         self.connection_thread.start()
 
     def send_message(self, message):
-        print message
+        print (message)
         if self.connection.remote_status is RemoteStatus.HANDSHAKE_SUCCESSFUL:
             self.connection.send(message)
 
@@ -192,7 +192,7 @@ class Client:
     def deactivate_autonomy(self):
         pass
 
-    def is_autonomy_acticated(self):
+    def is_autonomy_activated(self):
         return False
 
 
@@ -217,11 +217,11 @@ if __name__ == '__main__':
                         required=False, type=int, default=str(DEFAULT_BUFFER_SIZE))
     args = parser.parse_args()
 
-    print 'clientIpAddress:', args.clientIPAddress
-    print 'clientPortNumber:', args.clientPortNumber
-    print 'controllerIpAddress:', args.controllerIPAddress
-    print 'controllerPortNumber:', args.controllerPortNumber
-    print 'bufferSize:', args.bufferSize
+    print ('clientIpAddress:', args.clientIPAddress)
+    print ('clientPortNumber:', args.clientPortNumber)
+    print ('controllerIpAddress:', args.controllerIPAddress)
+    print ('controllerPortNumber:', args.controllerPortNumber)
+    print ('bufferSize:', args.bufferSize)
 
     main(args.clientIPAddress, args.clientPortNumber,
          args.controllerIPAddress, args.controllerPortNumber,
