@@ -1,10 +1,12 @@
+# -*- coding: utf-8 -*-
+
 import sys
 from message import *
 import enum
 
 import sip
 
-from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets
  
 # Use the more modern PyQt API (not enabled by default in Python 2.x);   
@@ -70,7 +72,91 @@ class Window(QWidget):
         self.deactivate_autonomy_button.setFocusPolicy(QtCore.Qt.NoFocus)
         self.deactivate_autonomy_button.setEnabled(False)
 
-        grid =  QtWidgets.QGridLayout()
+        # Text box to display telemetry data
+        telemetry_box = QtWidgets.QHBoxLayout()
+        network_box = QtWidgets.QHBoxLayout()
+        controller_status_box = QtWidgets.QVBoxLayout()
+        speed_box = QtWidgets.QVBoxLayout()
+        power_box = QtWidgets.QVBoxLayout()
+        connection_box = QtWidgets.QVBoxLayout()
+
+        self.roboclaw_status_label = QLabel()
+        self.roboclaw_status_label.setAlignment(Qt.Qt.AlignLeft)
+        self.roboclaw_status_label.setText("Roboclaw: disconnected")
+        controller_status_box .addWidget(self.roboclaw_status_label)
+
+        self.left_motor_status_label = QLabel()
+        self.left_motor_status_label.setAlignment(Qt.Qt.AlignLeft)
+        self.left_motor_status_label.setText("Left motor: disconnected")
+        controller_status_box .addWidget(self.left_motor_status_label)
+
+        self.right_motor_status_label = QLabel()
+        self.right_motor_status_label.setAlignment(Qt.Qt.AlignLeft)
+        self.right_motor_status_label.setText("Right motor: disconnected")
+        controller_status_box .addWidget(self.right_motor_status_label)
+
+        self.left_motor_speed = QLabel()
+        self.left_motor_speed.setAlignment(Qt.Qt.AlignCenter)
+        self.left_motor_speed.setText("Left motor rpm: " + "0")
+        speed_box.addWidget(self.left_motor_speed)
+
+        self.right_motor_speed = QLabel()
+        self.right_motor_speed.setAlignment(Qt.Qt.AlignCenter)
+        self.right_motor_speed.setText("Right motor rpm: " + "0")
+        speed_box.addWidget(self.right_motor_speed)
+
+        self.actuator_length_label = QLabel()
+        self.actuator_length_label.setAlignment(Qt.Qt.AlignCenter)
+        self.actuator_length_label.setText("Actuator length: " + "0" + "\"")
+        speed_box.addWidget(self.actuator_length_label)
+
+        self.bucket_angle_label = QLabel()
+        self.bucket_angle_label.setAlignment(Qt.Qt.AlignCenter)
+        self.bucket_angle_label.setText("Bucket Angle: " + "0" + "°")
+        speed_box.addWidget(self.bucket_angle_label)
+
+        self.actuator_current_label = QLabel()
+        self.actuator_current_label.setAlignment(Qt.Qt.AlignCenter)
+        self.actuator_current_label.setText("Actuator current: " + "0" + "A")
+        power_box.addWidget(self.actuator_current_label)
+
+        self.bucket_current_label = QLabel()
+        self.bucket_current_label.setAlignment(Qt.Qt.AlignCenter)
+        self.bucket_current_label.setText("Bucket current: " + "0" + "A")
+        power_box.addWidget(self.bucket_current_label)
+
+        self.battery_voltage_label = QLabel()
+        self.battery_voltage_label.setAlignment(Qt.Qt.AlignCenter)
+        self.battery_voltage_label.setText("Battery Voltage: " + "0" + "V")
+        power_box.addWidget(self.battery_voltage_label)
+
+        telemetry_box.addLayout(controller_status_box)
+        telemetry_box.addLayout(speed_box)
+        telemetry_box.addLayout(power_box)
+
+        self.client_ip_address_label = QLabel()
+        self.client_ip_address_label.setAlignment(Qt.Qt.AlignLeft)
+        self.client_ip_address_label.setText("Client IP: " + str(self.client.client_ip_address))
+        connection_box.addWidget(self.client_ip_address_label)
+
+        self.client_port_label = QLabel()
+        self.client_port_label.setAlignment(Qt.Qt.AlignLeft)
+        self.client_port_label.setText("Client Port: " + str(self.client.client_port_number))
+        connection_box.addWidget(self.client_port_label)
+
+        self.controller_ip_address_label = QLabel()
+        self.controller_ip_address_label.setAlignment(Qt.Qt.AlignLeft)
+        self.controller_ip_address_label.setText("Controller address: " + str(self.client.controller_ip_address))
+        connection_box.addWidget(self.controller_ip_address_label)
+
+        self. controller_port_label = QLabel()
+        self.controller_port_label.setAlignment(Qt.Qt.AlignLeft)
+        self.controller_port_label.setText("Controller port: " + str(self.client.controller_port_number))
+        connection_box.addWidget(self.controller_port_label)
+
+        network_box.addLayout(connection_box)
+
+        grid = QtWidgets.QGridLayout()
         grid.setSpacing(10)
 
         h_box_0 = QtWidgets.QHBoxLayout()
@@ -85,7 +171,13 @@ class Window(QWidget):
 
         v_box = QtWidgets.QVBoxLayout()
         v_box.addStretch(1)
+
+        #v_box.addLayout(telemetry_box)
+        v_box.addStretch(1)
+        v_box.addLayout(network_box)
+        v_box.addStretch(10)
         v_box.addLayout(grid)
+
         v_box.addLayout(h_box_0)
         v_box.addLayout(h_box_1)
         
@@ -104,6 +196,14 @@ class Window(QWidget):
         cp = QtWidgets.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+    def update_telemetry(self, message):
+        self.battery_voltage_label.setText("Battery Voltage: " + "10" + "V")
+        print "1!11"
+        if message is not None:
+            print message
+
+        #  TODO: Finish this logic to parse and update incoming data.
 
     def keyPressEvent(self, event):
         if self.open_connection_button.isEnabled() \
