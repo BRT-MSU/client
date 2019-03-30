@@ -84,11 +84,11 @@ if __name__ == '__main__':
                         required=False, type=int, default=str(DEFAULT_BUFFER_SIZE))
     args = parser.parse_args()
 
-    print 'clientIpAddress:', args.clientIPAddress
-    print 'clientPortNumber:', args.clientPortNumber
-    print 'controllerIpAddress:', args.controllerIPAddress
-    print 'controllerPortNumber:', args.controllerPortNumber
-    print 'bufferSize:', args.bufferSize
+    print ('Client Ip Address:'), args.clientIPAddress
+    print ('Client Port Number:'), args.clientPortNumber
+    print ('Controller Ip Address:'), args.controllerIPAddress
+    print ('Controller Port Number:'), args.controllerPortNumber
+    print ('Buffer Size:'), args.bufferSize
 
     main(args.clientIPAddress, args.clientPortNumber,
          args.controllerIPAddress, args.controllerPortNumber,

@@ -1,11 +1,11 @@
 import sys
+from client_simulation import *
 from message import *
 import enum
-
 import sip
-
 from PyQt5.QtWidgets import QApplication, QWidget
-from PyQt5 import Qt, QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
  
 # Use the more modern PyQt API (not enabled by default in Python 2.x);   
 # must precede importing any module that provides the API specified
@@ -21,7 +21,7 @@ sip.setapi('QVariant', 2)
 MOTOR_SPEEDS = {0: 100, 1: 100, 2: 100}
 
 MAX_MOTOR_SPEED = 100
-
+BUFFER = []
 
 class Motor(enum.Enum):
     DRIVE_MOTORS = 0
@@ -69,6 +69,19 @@ class Window(QWidget):
         self.deactivate_autonomy_button.setFocusPolicy(QtCore.Qt.NoFocus)
         self.deactivate_autonomy_button.setEnabled(False)
 
+        # Button to run simulation
+        self.simulation_button = QtWidgets.QPushButton('Simulation', self)
+        self.simulation_button.move(0, 30)
+        self.simulation_button.clicked.connect(self.simulation_event)
+        self.simulation_button.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.simulation_button.setEnabled(True)
+
+        # Button to run real time tracking
+        self.real_time_tracking_button = QtWidgets.QPushButton('Real Time Tracking', self)
+        self.real_time_tracking_button.clicked.connect(self.real_time_tracking_event)
+        self.real_time_tracking_button.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.real_time_tracking_button.setEnabled(False)
+
         grid =  QtWidgets.QGridLayout()
         grid.setSpacing(10)
 
@@ -114,6 +127,7 @@ class Window(QWidget):
         if not event.isAutoRepeat():
             # Driving logic
             if key == QtCore.Qt.Key_W:
+                #BUFFER.append('W\n')
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
 
@@ -123,6 +137,7 @@ class Window(QWidget):
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
             elif key == QtCore.Qt.Key_S:
+                #BUFFER.append('S\n')
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
 
@@ -132,6 +147,7 @@ class Window(QWidget):
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
             elif key == QtCore.Qt.Key_A:
+                #BUFFER.append('A\n')
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
 
@@ -141,6 +157,7 @@ class Window(QWidget):
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
             elif key == QtCore.Qt.Key_D:
+                #BUFFER.append('D\n')
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
 
@@ -152,17 +169,21 @@ class Window(QWidget):
 
             # Motor speed adjustment mode logic
             elif key == QtCore.Qt.Key_1:
+                #BUFFER.append('1\n')
                 self.motor_speed_to_adjust = Motor.DRIVE_MOTORS.value
-                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
+                print ('Motor speed adjustment mode:'), str(self.motor_speed_to_adjust)
             elif key == QtCore.Qt.Key_2:
+                #BUFFER.append('2\n')
                 self.motor_speed_to_adjust = Motor.ACTUATOR.value
-                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
+                print ('Motor speed adjustment mode:'), str(self.motor_speed_to_adjust)
             elif key == QtCore.Qt.Key_3:
+                #BUFFER.append('3\n')
                 self.motor_speed_to_adjust = Motor.BUCKET.value
-                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
+                print ('Motor speed adjustment mode:'), str(self.motor_speed_to_adjust)
 
             # Actuator logic
             elif key == QtCore.Qt.Key_U:
+                #BUFFER.append('U\n')
                 if key not in self.actuator_keys_pressed:
                     self.actuator_keys_pressed.append(key)
 
@@ -171,6 +192,7 @@ class Window(QWidget):
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
             elif key == QtCore.Qt.Key_J:
+                #BUFFER.append('J\n')
                 if key not in self.actuator_keys_pressed:
                     self.actuator_keys_pressed.append(key)
 
@@ -181,6 +203,7 @@ class Window(QWidget):
 
             # Bucket logic
             elif key == QtCore.Qt.Key_I:
+                #BUFFER.append('I\n')
                 if key not in self.bucket_keys_pressed:
                     self.bucket_keys_pressed.append(key)
 
@@ -189,6 +212,7 @@ class Window(QWidget):
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
             elif key == QtCore.Qt.Key_K:
+                #BUFFER.append('K\n')
                 if key not in self.bucket_keys_pressed:
                     self.bucket_keys_pressed.append(key)
 
@@ -199,20 +223,21 @@ class Window(QWidget):
 
         # Motor speed adjustment logic
         if key == QtCore.Qt.Key_Up:
+            #BUFFER.append('Up\n')
             if MOTOR_SPEEDS[self.motor_speed_to_adjust] < MAX_MOTOR_SPEED:
                 MOTOR_SPEEDS[self.motor_speed_to_adjust] += 1
-                print MOTOR_SPEEDS[self.motor_speed_to_adjust]
+                print (MOTOR_SPEEDS[self.motor_speed_to_adjust])
                 if len(self.drive_keys_pressed):
                     self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1], 
                                                     QtCore.Qt.NoModifier))
         elif key == QtCore.Qt.Key_Down:
+            #BUFFER.append('Down\n')
             if MOTOR_SPEEDS[self.motor_speed_to_adjust] > 0:
                 MOTOR_SPEEDS[self.motor_speed_to_adjust] -= 1
-                print MOTOR_SPEEDS[self.motor_speed_to_adjust]
+                print (MOTOR_SPEEDS[self.motor_speed_to_adjust])
                 if len(self.drive_keys_pressed):
                     self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1], 
                                                     QtCore.Qt.NoModifier))
-
     def keyReleaseEvent(self, event):
         if event.isAutoRepeat() or self.open_connection_button.isEnabled() \
                 or self.deactivate_autonomy_button.isEnabled():
@@ -281,10 +306,10 @@ class Window(QWidget):
 
     def open_connection_event(self):
         self.client.open_connection()
-
         self.open_connection_button.setEnabled(False)
         self.close_connection_button.setEnabled(True)
-
+        self.real_time_tracking_button.setEnabled(True)
+        self.simulation_button.setEnabled(False)
         self.activate_autonomy_button.setEnabled(True)
 
     def close_connection_event(self):
@@ -308,6 +333,7 @@ class Window(QWidget):
 
             self.activate_autonomy_button.setEnabled(False)
             self.deactivate_autonomy_button.setEnabled(False)
+
 
     def activate_autonomy_event(self):
         quit_message = 'Are you sure you want to activate autonomy?'
@@ -341,6 +367,13 @@ class Window(QWidget):
         self.activate_autonomy_button.setEnabled(True)
         self.deactivate_autonomy_button.setEnabled(False)
 
+    def simulation_event(self):
+        sim = Setup()
+        sim.start()
+
+    def real_time_tracking_event(self):
+        print()
+
     def closeEvent(self, QCloseEvent):
         quit_message = 'Are you sure you want to exit the client?'
         reply = QtWidgets.QMessageBox.question(self, 'Message',
@@ -360,7 +393,13 @@ class Window(QWidget):
 def main(client):
     app = QApplication(sys.argv)
     window = Window(client)
+    # log = open('key_press_log.txt', 'w')
+    # log.write('Key Press Log: \n')
+    # for i in BUFFER:
+    #     log.write(i)
+    # log.close()
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()
