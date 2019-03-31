@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QMainWindow
 import client
 from UIdesign import Ui_MainWindow
 
+KEYS_PRESSED = []
 
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, client, parent=None):
@@ -65,6 +66,7 @@ class Window(QMainWindow, Ui_MainWindow):
                                                    QtWidgets.QMessageBox.Yes)
 
             if reply == QtWidgets.QMessageBox.Yes:
+                self.client.send_message('Autonomy Activated')
                 self.autonomy_button.setText("deactivate autonomy")
                 pass
         elif self.autonomy_button.text() == "deactivate autonomy":
@@ -75,19 +77,21 @@ class Window(QMainWindow, Ui_MainWindow):
                                                    QtWidgets.QMessageBox.Yes)
 
             if reply == QtWidgets.QMessageBox.Yes:
+                self.client.send_message('Autonomy Deactivated')
                 self.autonomy_button.setText("activate autonomy")
                 pass
 
     def keyPressEvent(self, event):
         if self.client.connection is None or \
-                        self.client.is_autonomy_acticated():
-            return
+                        self.client.is_autonomy_activated():
+            pass
         key = event.key()
 
         if not event.isAutoRepeat():
             # Driving logic
             if key == QtCore.Qt.Key_W:
                 if key not in self.drive_keys_pressed:
+                    KEYS_PRESSED.append(key)
                     self.drive_keys_pressed.append(key)
                 self.client.drive_forward(self.client.get_drive_speed())
             elif key == QtCore.Qt.Key_S:
@@ -169,9 +173,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.bucket_target_speed.setText("bucket: " + str(self.client.get_bucket_speed()))
 
     def keyReleaseEvent(self, event):
-        if event.isAutoRepeat() or self.client.connection is None \
-                or self.client.is_autonomy_acticated():
-            return
+        # if event.isAutoRepeat() or self.client.connection is None \
+        #         or self.client.is_autonomy_acticated():
+        #     pass
 
         key = event.key()
 

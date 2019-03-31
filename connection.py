@@ -71,7 +71,7 @@ class Connection:
                     pass
                 break
             except socket.error:
-                print('Socket Error')
+                print('Waiting...')
 
     def send(self, message):
         remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
