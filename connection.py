@@ -108,7 +108,7 @@ class Connection:
                 if message == bytes('SYN\n', "utf8"):
                     connection.send(bytes('ACK\n', "utf8"))
                 else:
-                    print('Local socket received:', message.rstrip())
+                    print('Local socket received:', message.decode('utf-8').rstrip())
                     self.local_queue.put(message)
             except socket.error:
                 break

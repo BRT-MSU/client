@@ -102,28 +102,28 @@ class Client:
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'l': speed,
                         'r': speed}
-        message = Message(forwarding_prefix, sub_messages).message
+        message = 'w'
         self.send_message(message)
 
     def drive_reverse(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'l': -1 * speed,
                         'r': -1 * speed}
-        message = Message(forwarding_prefix, sub_messages).message
+        message = 's'
         self.send_message(message)
 
     def turn_left(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'l': -1 * speed,
                         'r': 1 * speed}
-        message = Message(forwarding_prefix, sub_messages).message
+        message = 'a'
         self.send_message(message)
 
     def turn_right(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'l': 1 * speed,
                         'r': -1 * speed}
-        message = Message(forwarding_prefix, sub_messages).message
+        message = 'd'
         self.send_message(message)
 
     def actuator_forward(self, speed):
