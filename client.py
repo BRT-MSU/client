@@ -126,16 +126,28 @@ class Client:
         message = 'd'
         self.send_message(message)
 
+    def speed_up(self, speed):
+        forwarding_prefix = ForwardingPrefix.MOTOR.value
+        sub_messages = {'a': speed}
+        message = 'u'
+        self.send_message(message)
+
+    def speed_down(self, speed):
+        forwarding_prefix = ForwardingPrefix.MOTOR.value
+        sub_messages = {'a': speed}
+        message = 'j'
+        self.send_message(message)
+
     def actuator_forward(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'a': speed}
-        message = Message(forwarding_prefix, sub_messages).message
+        message = 'i'
         self.send_message(message)
 
     def actuator_reverse(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'a': -1 * speed}
-        message = Message(forwarding_prefix, sub_messages).message
+        message = 'k'
         self.send_message(message)
 
     def bucket_forward(self, speed):
