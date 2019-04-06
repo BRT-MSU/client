@@ -22,6 +22,8 @@ class Ui_MainWindow(object):
         self.toolbar.addAction(self.connection_button)
         self.autonomy_button = QAction("activate autonomy", self)
         self.toolbar.addAction(self.autonomy_button)
+        self.controller_button = QAction("enable controller", self)
+        self.toolbar.addAction(self.controller_button)
 
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import pygame
+import math
 from PyQt5 import Qt, QtCore, QtWidgets
-
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QMainWindow
 
@@ -19,12 +20,15 @@ class Window(QMainWindow, Ui_MainWindow):
         # setup buttons
         self.connection_button = None
         self.autonomy_button = None
+        self.controller_button = None
+        self.disable_controller_button = None
 
         self.setupUi(self)
 
         # connect methods
         self.connection_button.triggered.connect(self.on_connection_button)
         self.autonomy_button.triggered.connect(self.on_autonomy_button)
+        self.controller_button.triggered.connect(self.enable_controller)
         self.autonomy_button.setEnabled(False)
         self.motor_speed_to_adjust = 1
 
@@ -37,7 +41,64 @@ class Window(QMainWindow, Ui_MainWindow):
         self.show()
 
     def on_message_return(self, message):
-        print (message)
+        print(message)
+
+    def enable_controller(self):
+        self.controller_button.setEnabled(False)
+        pygame.init()
+        try:
+            j = pygame.joystick.Joystick(0)
+        except Exception:
+            print("\nNo Joystick Connected")
+            return
+        j.init()
+        try:
+            while True:
+                events = pygame.event.get()
+                for event in events:
+                    vert_axis_pos = j.get_axis(1)
+                    hor_axis_pos = j.get_axis(0)
+
+                    vert_axis_pos = math.floor(vert_axis_pos * 10)
+                    hor_axis_pos = math.floor(hor_axis_pos * 10)
+
+                    if hor_axis_pos == -1 and vert_axis_pos == -1:
+                        print("stop")
+                    if hor_axis_pos == -1 and hor_axis_pos < -8:
+                        print("forward")
+                    print("Vert")
+                    print(vert_axis_pos)
+                    print()
+                    print("Hor")
+                    print(hor_axis_pos)
+                    print()
+
+
+                    if event.type == pygame.JOYBUTTONDOWN:
+                        if j.get_button(9):
+                            print("Controller Disabled")
+                            j.quit()
+                            self.controller_button.setEnabled(True)
+                            return
+                    if event.type == pygame.JOYBUTTONUP:
+                        print(event.dict, event.joy, event.button, 'released')
+                    elif event.type == pygame.JOYHATMOTION:
+                        if event.value == (0, 1):
+                            print("actuator up")
+                            try:
+                                self.client.actuator_forward()
+                            except Exception:
+                                pass
+                        if event.value == (0, -1):
+                            print("actuator down")
+                            try:
+                                self.client.actuator_reverse()
+                            except Exception:
+                                pass
+
+        except KeyboardInterrupt:
+            print("EXITING NOW")
+            j.quit()
 
     def on_connection_button(self):
         if self.connection_button.text() == "open connection":
