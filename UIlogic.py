@@ -29,6 +29,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.connection_button.triggered.connect(self.on_connection_button)
         self.autonomy_button.triggered.connect(self.on_autonomy_button)
         self.controller_button.triggered.connect(self.enable_controller)
+        self.controller_button.setEnabled(False)
         self.autonomy_button.setEnabled(False)
         self.motor_speed_to_adjust = 1
 
@@ -51,7 +52,13 @@ class Window(QMainWindow, Ui_MainWindow):
         except Exception:
             print("\nNo Joystick Connected")
             return
+        try:
+            j = pygame.joystick.Joystick(1)
+        except Exception:
+            pass
+
         j.init()
+
         try:
             while True:
                 events = pygame.event.get()
@@ -64,18 +71,22 @@ class Window(QMainWindow, Ui_MainWindow):
 
                     if hor_axis_pos == -1 and vert_axis_pos == -1:
                         print("stop")
-                    if hor_axis_pos == -1 and hor_axis_pos < -8:
+                        self.client.drive_reverse(0)
+                    if -3 <= hor_axis_pos <= 5 and -10 <= vert_axis_pos <= -9:
                         print("forward")
-                    print("Vert")
-                    print(vert_axis_pos)
-                    print()
-                    print("Hor")
-                    print(hor_axis_pos)
-                    print()
-
+                        self.client.drive_forward(0)
+                    if 6 <= hor_axis_pos <= 9 and -9 <= vert_axis_pos <= 3:
+                        print("right")
+                        self.client.turn_right(0)
+                    if -9 <= vert_axis_pos <= 3 and -10 <= hor_axis_pos <= -8:
+                        print("left")
+                        self.client.turn_left(0)
+                    if vert_axis_pos > 3 and -10 <= hor_axis_pos <= 9:
+                        print("backward")
+                        self.client.drive_reverse(0)
 
                     if event.type == pygame.JOYBUTTONDOWN:
-                        if j.get_button(9):
+                        if j.get_button(9) or j.get_button(7):
                             print("Controller Disabled")
                             j.quit()
                             self.controller_button.setEnabled(True)
@@ -85,12 +96,14 @@ class Window(QMainWindow, Ui_MainWindow):
                     elif event.type == pygame.JOYHATMOTION:
                         if event.value == (0, 1):
                             print("actuator up")
+                            self.client.actuator_forward()
                             try:
-                                self.client.actuator_forward()
+                                self.client.actuator_forward(0)
                             except Exception:
                                 pass
                         if event.value == (0, -1):
                             print("actuator down")
+                            self.client.actuator_reverse(0)
                             try:
                                 self.client.actuator_reverse()
                             except Exception:
@@ -101,6 +114,7 @@ class Window(QMainWindow, Ui_MainWindow):
             j.quit()
 
     def on_connection_button(self):
+        self.controller_button.setEnabled(True)
         if self.connection_button.text() == "open connection":
             self.client.open_connection(self.on_message_return)
             self.autonomy_button.setEnabled(True)
