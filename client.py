@@ -9,7 +9,7 @@ from message import *
 DEFAULT_CLIENT_IP_ADDRESS = '0.0.0.0'
 DEFAULT_CLIENT_PORT_NUMBER = 1123
 
-DEFAULT_CONTROLLER_IP_ADDRESS = '10.152.175.202'
+DEFAULT_CONTROLLER_IP_ADDRESS = '10.152.176.169'
 DEFAULT_CONTROLLER_PORT_NUMBER = 5813
 
 DEFAULT_BUFFER_SIZE = 1024
@@ -112,6 +112,13 @@ class Client:
         message = 's'
         self.send_message(message)
 
+    def kill(self, speed):
+        forwarding_prefix = ForwardingPrefix.MOTOR.value
+        sub_messages = {'l': -1 * speed,
+                        'r': -1 * speed}
+        message = 'x'
+        self.send_message(message)
+
     def turn_left(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'l': -1 * speed,
@@ -153,13 +160,13 @@ class Client:
     def bucket_forward(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'b': speed}
-        message = Message(forwarding_prefix, sub_messages).message
+        message = 'q'#Message(forwarding_prefix, sub_messages).message
         self.send_message(message)
 
     def bucket_reverse(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'b': -1 * speed}
-        message = Message(forwarding_prefix, sub_messages).message
+        message = 'e'#Message(forwarding_prefix, sub_messages).message
         self.send_message(message)
 
     def set_left_drive_enabled(self, boolean=False):

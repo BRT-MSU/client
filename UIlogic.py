@@ -197,6 +197,18 @@ class Window(QMainWindow, Ui_MainWindow):
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
                 self.client.actuator_forward(self.client.get_drive_speed())
+            elif key == QtCore.Qt.Key_Q:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.bucket_forward(self.client.get_drive_speed())
+            elif key == QtCore.Qt.Key_E:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.bucket_reverse(self.client.get_drive_speed())
+            elif key == QtCore.Qt.Key_X:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.kill(self.client.get_drive_speed())
 
 
             # Motor speed adjustment mode logic
