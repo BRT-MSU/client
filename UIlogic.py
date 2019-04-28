@@ -205,6 +205,10 @@ class Window(QMainWindow, Ui_MainWindow):
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
                 self.client.bucket_reverse(self.client.get_drive_speed())
+            elif key == QtCore.Qt.Key_P:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.conveyor_forward(self.client.get_drive_speed())
             elif key == QtCore.Qt.Key_X:
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
