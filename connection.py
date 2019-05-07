@@ -56,6 +56,7 @@ class Connection:
     def initiate_handshake(self):
         self.remote_status = RemoteStatus.HANDSHAKE_INITIALIZED
         print(self.remote_status)
+        print("Waiting...")
         while True:
             remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             remote_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -73,7 +74,7 @@ class Connection:
                     pass
                 break
             except socket.error:
-                print('Waiting...')
+                pass
 
     def send(self, message):
         remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -9,7 +9,7 @@ from message import *
 DEFAULT_CLIENT_IP_ADDRESS = '0.0.0.0'
 DEFAULT_CLIENT_PORT_NUMBER = 1123
 
-DEFAULT_CONTROLLER_IP_ADDRESS = '10.152.175.202'
+DEFAULT_CONTROLLER_IP_ADDRESS = '192.168.1.125'
 DEFAULT_CONTROLLER_PORT_NUMBER = 5813
 
 DEFAULT_BUFFER_SIZE = 1024
@@ -141,13 +141,13 @@ class Client:
     def actuator_forward(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'a': speed}
-        message = 'i'
+        message = 'y'
         self.send_message(message)
 
     def actuator_reverse(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'a': -1 * speed}
-        message = 'k'
+        message = 'h'
         self.send_message(message)
 
     def bucket_forward(self, speed):
