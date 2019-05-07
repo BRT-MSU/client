@@ -170,9 +170,9 @@ class Client:
         message = 'e'#Message(forwarding_prefix, sub_messages).message
         self.send_message(message)
 
-    # def conveyor_forward(self, speed):
-    #     message = 'p'
-    #     self.send_message(message)
+    def conveyor_forward(self, speed):
+        message = 'p'
+        self.send_message(message)
     def set_left_drive_enabled(self, boolean=False):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         if boolean:

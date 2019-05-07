@@ -192,11 +192,11 @@ class Window(QMainWindow, Ui_MainWindow):
             elif key == QtCore.Qt.Key_I:
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
-                self.client.actuator_reverse(self.client.get_drive_speed())
+                self.client.actuator_forward(self.client.get_drive_speed())
             elif key == QtCore.Qt.Key_K:
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
-                self.client.actuator_forward(self.client.get_drive_speed())
+                self.client.actuator_reverse(self.client.get_drive_speed())
             elif key == QtCore.Qt.Key_Q:
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
@@ -227,24 +227,24 @@ class Window(QMainWindow, Ui_MainWindow):
                 print ('Motor speed adjustment mode:', str(self.motor_speed_to_adjust))
 
             # Actuator logic
-            elif key == QtCore.Qt.Key_U:
+            elif key == QtCore.Qt.Key_I:
                 if key not in self.actuator_keys_pressed:
                     self.actuator_keys_pressed.append(key)
                 self.client.actuator_forward(self.client.get_actuator_speed())
-            elif key == QtCore.Qt.Key_J:
+            elif key == QtCore.Qt.Key_K:
                 if key not in self.actuator_keys_pressed:
                     self.actuator_keys_pressed.append(key)
                 self.client.actuator_reverse(self.client.get_actuator_speed())
 
             # Bucket logic
-            elif key == QtCore.Qt.Key_I:
-                if key not in self.bucket_keys_pressed:
-                    self.bucket_keys_pressed.append(key)
-                self.client.bucket_forward(self.client.get_bucket_speed())
-            elif key == QtCore.Qt.Key_K:
-                if key not in self.bucket_keys_pressed:
-                    self.bucket_keys_pressed.append(key)
-                self.client.actuator_reverse(self.client.get_bucket_speed())
+            # elif key == QtCore.Qt.Key_I:
+            #     if key not in self.bucket_keys_pressed:
+            #         self.bucket_keys_pressed.append(key)
+            #     self.client.speed_up()
+            # elif key == QtCore.Qt.Key_K:
+            #     if key not in self.bucket_keys_pressed:
+            #         self.bucket_keys_pressed.append(key)
+            #     self.client.actuator_reverse(self.client.get_bucket_speed())
 
         # Motor speed adjustment logic
         if key == QtCore.Qt.Key_Up:
@@ -309,17 +309,17 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # Actuator logic
         if not len(self.actuator_keys_pressed):
-            if key == QtCore.Qt.Key_U:
+            if key == QtCore.Qt.Key_I:
                 self.client.actuator_forward(0)
-            elif key == QtCore.Qt.Key_J:
+            elif key == QtCore.Qt.Key_K:
                 self.client.actuator_reverse(0)
 
         # Bucket logic
-        if not len(self.bucket_keys_pressed):
-            if key == QtCore.Qt.Key_I:
-                self.client.bucket_forward(0)
-            elif key == QtCore.Qt.Key_K:
-                self.client.bucket_reverse(0)
+        # if not len(self.bucket_keys_pressed):
+        #     if key == QtCore.Qt.Key_I:
+        #         self.client.bucket_forward(0)
+        #     elif key == QtCore.Qt.Key_K:
+        #         self.client.bucket_reverse(0)
 
 
 
