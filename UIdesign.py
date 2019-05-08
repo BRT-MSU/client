@@ -1,6 +1,6 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -74,9 +74,10 @@ class Ui_MainWindow(object):
         return group
 
     def create_motor_enable(self):
-        group = QGroupBox("motors enabled")
+        group = QGroupBox("Driving Speed                            Digging Wheel Speed                         Actuator Speed")
         group.setCheckable(True)
         group.setChecked(False)
+        hbox1 = QHBoxLayout()
         hbox = QHBoxLayout()
 
         self.left_motor_enable_checkbox = QCheckBox("left motor")
@@ -89,10 +90,44 @@ class Ui_MainWindow(object):
         self.bucket_enable_checkbox.setChecked(True)
         self.bucket_enable_checkbox.setTristate(False)
 
-        hbox.addWidget(self.left_motor_enable_checkbox)
-        hbox.addWidget(self.right_motor_enable_checkbox)
-        hbox.addWidget(self.actuator_enable_checkbox)
-        hbox.addWidget(self.bucket_enable_checkbox)
+        # Driving speed
+        self.l1 = QLabel()
+        self.l1.setText("Driving Speed")
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setFocusPolicy(Qt.StrongFocus)
+        self.slider.setTickPosition(QSlider.TicksBothSides)
+        self.slider.setTickInterval(10)
+        self.slider.setSingleStep(1)
+
+        # Digging Wheel speed
+        self.l2 = QLabel()
+        self.l2.setText("Digging Wheel Speed")
+        self.slider1 = QSlider(Qt.Horizontal)
+        self.slider1.setFocusPolicy(Qt.StrongFocus)
+        self.slider1.setTickPosition(QSlider.TicksBothSides)
+        self.slider1.setTickInterval(10)
+        self.slider1.setSingleStep(1)
+
+        # Actuator speed
+        self.l3 = QLabel()
+        self.l3.setText("Actuator Speed")
+        self.slider2 = QSlider(Qt.Horizontal)
+        self.slider2.setFocusPolicy(Qt.StrongFocus)
+        self.slider2.setTickPosition(QSlider.TicksBothSides)
+        self.slider2.setTickInterval(10)
+        self.slider2.setSingleStep(1)
+
+        hbox.addWidget(self.slider)
+        hbox.addWidget(self.slider1)
+        hbox.addWidget(self.slider2)
+
+        hbox1.addWidget(self.l1)
+        hbox1.addWidget(self.l2)
+        hbox1.addWidget(self.l3)
+        # hbox.addWidget(self.left_motor_enable_checkbox)
+        # hbox.addWidget(self.right_motor_enable_checkbox)
+        # hbox.addWidget(self.actuator_enable_checkbox)
+        # hbox.addWidget(self.bucket_enable_checkbox)
 
         group.setLayout(hbox)
 

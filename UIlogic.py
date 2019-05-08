@@ -3,6 +3,7 @@
 import sys
 import pygame
 import math
+import time
 from PyQt5 import Qt, QtCore, QtWidgets
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QMainWindow
@@ -60,54 +61,74 @@ class Window(QMainWindow, Ui_MainWindow):
         j.init()
 
         try:
+            pressed = False
             while True:
+                time.sleep(0.1)
                 events = pygame.event.get()
                 for event in events:
-                    vert_axis_pos = j.get_axis(1)
-                    hor_axis_pos = j.get_axis(0)
-
-                    vert_axis_pos = math.floor(vert_axis_pos * 10)
-                    hor_axis_pos = math.floor(hor_axis_pos * 10)
-
-                    if hor_axis_pos == -1 and vert_axis_pos == -1:
-                        print("stop")
-                        self.client.drive_reverse(0)
-                    if -3 <= hor_axis_pos <= 5 and -10 <= vert_axis_pos <= -9:
-                        print("forward")
-                        self.client.drive_forward(0)
-                    if 6 <= hor_axis_pos <= 9 and -9 <= vert_axis_pos <= 3:
-                        print("right")
-                        self.client.turn_right(0)
-                    if -9 <= vert_axis_pos <= 3 and -10 <= hor_axis_pos <= -8:
-                        print("left")
-                        self.client.turn_left(0)
-                    if vert_axis_pos > 3 and -10 <= hor_axis_pos <= 9:
-                        print("backward")
-                        self.client.drive_reverse(0)
 
                     if event.type == pygame.JOYBUTTONDOWN:
-                        if j.get_button(9) or j.get_button(7):
+                        if j.get_button(9):
                             print("Controller Disabled")
                             j.quit()
                             self.controller_button.setEnabled(True)
                             return
-                    if event.type == pygame.JOYBUTTONUP:
-                        print(event.dict, event.joy, event.button, 'released')
-                    elif event.type == pygame.JOYHATMOTION:
-                        if event.value == (0, 1):
+                        if j.get_button(7):
+                            pressed = True
+                            print("dig forward")
+                            self.client.bucket_reverse(0)
+                        # if j.get_button(6):
+                        #     pressed = True
+                        #     print("dig reverse")
+                        #     self.client.bucket_reverse(0)
+                        if j.get_button(4):
+                            pressed = True
+                            print("conveyor forward")
+                            self.client.conveyor_forward(0)
+                        if j.get_button(3):
+                            pressed = True
                             print("actuator up")
-                            self.client.actuator_forward()
-                            try:
-                                self.client.actuator_forward(0)
-                            except Exception:
-                                pass
-                        if event.value == (0, -1):
+                            self.client.actuator_forward(0)
+                        if j.get_button(1):
+                            pressed = True
                             print("actuator down")
                             self.client.actuator_reverse(0)
-                            try:
-                                self.client.actuator_reverse()
-                            except Exception:
-                                pass
+
+                    if event.type == pygame.JOYBUTTONUP:
+                        pressed = False
+                        print(event.dict, event.joy, event.button, 'released')
+                    # elif event.type == pygame.JOYHATMOTION:
+                    #     if event.value == (0, 1):
+                    #         pressed = True
+                    #         print("actuator up")
+                    #         self.client.actuator_forward(0)
+                    #     if event.value == (0, -1):
+                    #         pressed = True
+                    #         print("actuator down")
+                    #         self.client.actuator_reverse(0)
+
+                    if pressed == False:
+                        vert_axis_pos = j.get_axis(1)
+                        hor_axis_pos = j.get_axis(0)
+
+                        vert_axis_pos = math.floor(vert_axis_pos * 10)
+                        hor_axis_pos = math.floor(hor_axis_pos * 10)
+
+                        if hor_axis_pos == -1 and vert_axis_pos == -1:
+                            print("stop")
+                            self.client.kill(0)
+                        if -3 <= hor_axis_pos <= 5 and -10 <= vert_axis_pos <= -9:
+                            print("forward")
+                            self.client.drive_forward(0)
+                        if 6 <= hor_axis_pos <= 9 and -9 <= vert_axis_pos <= 3:
+                            print("right")
+                            self.client.turn_right(0)
+                        if -9 <= vert_axis_pos <= 3 and -10 <= hor_axis_pos <= -8:
+                            print("left")
+                            self.client.turn_left(0)
+                        if vert_axis_pos > 3 and -10 <= hor_axis_pos <= 9:
+                            print("backward")
+                            self.client.drive_reverse(0)
 
         except KeyboardInterrupt:
             print("EXITING NOW")
@@ -213,7 +234,34 @@ class Window(QMainWindow, Ui_MainWindow):
                 if key not in self.drive_keys_pressed:
                     self.drive_keys_pressed.append(key)
                 self.client.kill(self.client.get_drive_speed())
-
+            elif key == QtCore.Qt.Key_1:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.dig_sequence(self.client.get_drive_speed())
+            elif key == QtCore.Qt.Key_Equal:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.dspeed_up(self.cient.get_drive_speed())
+            elif key == QtCore.Qt.Key_hyphen:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.dspeed_down(self.cient.get_drive_speed())
+            elif key == QtCore.Qt.Key_Left:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.send_message('al')
+            elif key == QtCore.Qt.Key_Right:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.send_message('ar')
+            elif key == QtCore.Qt.Key_Up:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.send_message('au')
+            elif key == QtCore.Qt.Key_Down:
+                if key not in self.drive_keys_pressed:
+                    self.drive_keys_pressed.append(key)
+                self.client.send_message('ad')
 
             # Motor speed adjustment mode logic
             elif key == QtCore.Qt.Key_1:
@@ -247,32 +295,32 @@ class Window(QMainWindow, Ui_MainWindow):
             #     self.client.actuator_reverse(self.client.get_bucket_speed())
 
         # Motor speed adjustment logic
-        if key == QtCore.Qt.Key_Up:
-            if self.client.motor_speeds[self.motor_speed_to_adjust] < client.MAX_MOTOR_SPEED:
-                if self.motor_speed_to_adjust is 0:
-                    self.client.set_drive_speed(self.client.get_drive_speed() + 1)
-                elif self.motor_speed_to_adjust is 1:
-                    self.client.set_actuator_speed(self.client.get_actuator_speed() + 1)
-                elif self.motor_speed_to_adjust is 2:
-                    self.client.set_bucket_speed(self.client.get_bucket_speed() + 1)
-                print (self.client.motor_speeds[self.motor_speed_to_adjust])
-                self.update_motor_speeds()
-                if len(self.drive_keys_pressed):
-                    self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1],
-                                                    QtCore.Qt.NoModifier))
-        elif key == QtCore.Qt.Key_Down:
-            if self.client.motor_speeds[self.motor_speed_to_adjust] > 0:
-                if self.motor_speed_to_adjust is 0:
-                    self.client.set_drive_speed(self.client.get_drive_speed() - 1)
-                elif self.motor_speed_to_adjust is 1:
-                    self.client.set_actuator_speed(self.client.get_actuator_speed() - 1)
-                elif self.motor_speed_to_adjust is 2:
-                    self.client.set_bucket_speed(self.client.get_bucket_speed() - 1)
-                print (self.client.motor_speeds[self.motor_speed_to_adjust])
-                self.update_motor_speeds()
-                if len(self.drive_keys_pressed):
-                    self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1],
-                                                    QtCore.Qt.NoModifier))
+        # if key == QtCore.Qt.Key_Up:
+        #     if self.client.motor_speeds[self.motor_speed_to_adjust] < client.MAX_MOTOR_SPEED:
+        #         if self.motor_speed_to_adjust is 0:
+        #             self.client.set_drive_speed(self.client.get_drive_speed() + 1)
+        #         elif self.motor_speed_to_adjust is 1:
+        #             self.client.set_actuator_speed(self.client.get_actuator_speed() + 1)
+        #         elif self.motor_speed_to_adjust is 2:
+        #             self.client.set_bucket_speed(self.client.get_bucket_speed() + 1)
+        #         print (self.client.motor_speeds[self.motor_speed_to_adjust])
+        #         self.update_motor_speeds()
+        #         if len(self.drive_keys_pressed):
+        #             self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1],
+        #                                             QtCore.Qt.NoModifier))
+        # elif key == QtCore.Qt.Key_Down:
+        #     if self.client.motor_speeds[self.motor_speed_to_adjust] > 0:
+        #         if self.motor_speed_to_adjust is 0:
+        #             self.client.set_drive_speed(self.client.get_drive_speed() - 1)
+        #         elif self.motor_speed_to_adjust is 1:
+        #             self.client.set_actuator_speed(self.client.get_actuator_speed() - 1)
+        #         elif self.motor_speed_to_adjust is 2:
+        #             self.client.set_bucket_speed(self.client.get_bucket_speed() - 1)
+        #         print (self.client.motor_speeds[self.motor_speed_to_adjust])
+        #         self.update_motor_speeds()
+        #         if len(self.drive_keys_pressed):
+        #             self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1],
+        #                                             QtCore.Qt.NoModifier))
 
     def update_motor_speeds(self):
         self.left_motor_target_speed.setText("left motor: " + str(self.client.get_drive_speed()))
@@ -286,6 +334,18 @@ class Window(QMainWindow, Ui_MainWindow):
         #     pass
 
         key = event.key()
+
+        if event.key() == QtCore.Qt.Key_Up:
+            self.client.send_message('aux')
+
+        if event.key() == QtCore.Qt.Key_Down:
+            self.client.send_message('adx')
+
+        if event.key() == QtCore.Qt.Key_Left:
+            self.client.send_message('alx')
+
+        if event.key() == QtCore.Qt.Key_Right:
+            self.client.send_message('arx')
 
         if key in self.drive_keys_pressed:
             self.drive_keys_pressed.remove(key)

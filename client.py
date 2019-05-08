@@ -69,7 +69,6 @@ class Client:
         self.connection_thread.start()
 
     def send_message(self, message):
-        print (message)
         if self.connection.remote_status is RemoteStatus.HANDSHAKE_SUCCESSFUL:
             self.connection.send(message)
 
@@ -134,15 +133,27 @@ class Client:
         message = 'd'
         self.send_message(message)
 
-    def speed_up(self, speed):
+    def dspeed_up(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'a': speed}
-        message = 'u'
+        message = 'dspeed+'
         self.send_message(message)
 
-    def speed_down(self, speed):
+    def dspeed_down(self, speed):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         sub_messages = {'a': speed}
+        message = 'dspeed-'
+        self.send_message(message)
+
+    def bspeed_up(self, speed):
+        forwarding_prefix = ForwardingPrefix.MOTOR.value
+        sub_messages = {'a': speed}
+        message = 'bspeed+'
+        self.send_message(message)
+
+    def bspeed_down(self, speed):
+        forwarding_prefix = ForwardingPrefix.MOTOR.value
+        sub_messages = {'bspeed-': speed}
         message = 'j'
         self.send_message(message)
 
@@ -173,6 +184,27 @@ class Client:
     def conveyor_forward(self, speed):
         message = 'p'
         self.send_message(message)
+
+    def dig_sequence(self, speed):
+        message = '1'
+        self.send_message(message)
+
+    # def camera_up(self, speed):
+    #     message = 'au'
+    #     self.send_message(message)
+    #
+    # def camera_down(self, speed):
+    #     message = 'ad'
+    #     self.send_message(message)
+    #
+    # def camera_left(self, speed):
+    #     message = 'al'
+    #     self.send_message(message)
+    #
+    # def camera_right(self, speed):
+    #     message = 'ar'
+    #     self.send_message(message)
+
     def set_left_drive_enabled(self, boolean=False):
         forwarding_prefix = ForwardingPrefix.MOTOR.value
         if boolean:
