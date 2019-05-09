@@ -17,8 +17,8 @@ sip.setapi('QTime', 2)
 sip.setapi('QUrl', 2)
 sip.setapi('QVariant', 2)
 
-# Default motor speeds {DRIVE_MOTORS, ACTUATOR, BUCKET}
-MOTOR_SPEEDS = {0: 100, 1: 100, 2: 100}
+# Default motor speeds {DRIVE_MOTORS, ACTUATOR, BUCKET, CONVEYOR}
+MOTOR_SPEEDS = {0: 100, 1: 100, 2: 100, 3: 100}
 
 MAX_MOTOR_SPEED = 100
 
@@ -27,7 +27,7 @@ class Motor(enum.Enum):
     DRIVE_MOTORS = 0
     ACTUATOR = 1
     BUCKET = 2
-
+    CONVEYOR = 3
 
 class Window(QWidget):
     def __init__(self, client):
@@ -40,6 +40,9 @@ class Window(QWidget):
         self.actuator_keys_pressed = []
 
         self.bucket_keys_pressed = []
+
+        self.conveyor_keys_pressed = []
+        self.autonamous_digging_keys_pressed = []
 
         self.motor_speed_to_adjust = Motor.DRIVE_MOTORS.value
 
@@ -149,6 +152,18 @@ class Window(QWidget):
                                 'r': -1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value]}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
+            elif key == QtCore.Qt.Key_Q:
+                sub_messages = {}
+                if key in self.autonamous_digging_keys_pressed:
+                    self.autonamous_digging_keys_pressed.remove(key)
+                else:
+                    self.autonamous_digging_keys_pressed.append(key)
+                sub_messages = {'q' : '0'}
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
+
 
             # Motor speed adjustment mode logic
             elif key == QtCore.Qt.Key_1:
@@ -160,6 +175,10 @@ class Window(QWidget):
             elif key == QtCore.Qt.Key_3:
                 self.motor_speed_to_adjust = Motor.BUCKET.value
                 print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
+            elif key == QtCore.Qt.Key_4:
+                self.motor_speed_to_adjust = Motor.CONVEYOR.value
+                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
+
 
             # Actuator logic
             elif key == QtCore.Qt.Key_U:
@@ -188,12 +207,13 @@ class Window(QWidget):
                 sub_messages = {'b': MOTOR_SPEEDS[Motor.BUCKET.value]}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
+            # Conveyor logic
             elif key == QtCore.Qt.Key_K:
-                if key not in self.bucket_keys_pressed:
-                    self.bucket_keys_pressed.append(key)
+                if key not in self.conveyor_keys_pressed:
+                    self.conveyor_keys_pressed.append(key)
 
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
-                sub_messages = {'b': -1 * MOTOR_SPEEDS[Motor.BUCKET.value]}
+                sub_messages = {'c': MOTOR_SPEEDS[Motor.CONVEYOR.value]}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
 
@@ -213,6 +233,9 @@ class Window(QWidget):
                     self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1], 
                                                     QtCore.Qt.NoModifier))
 
+
+
+
     def keyReleaseEvent(self, event):
         if event.isAutoRepeat() or self.open_connection_button.isEnabled() \
                 or self.deactivate_autonomy_button.isEnabled():
@@ -229,6 +252,9 @@ class Window(QWidget):
         if key in self.bucket_keys_pressed:
             self.bucket_keys_pressed.remove(key)
 
+        if key in self.conveyor_keys_pressed:
+            self.conveyor_keys_pressed.remove(key)
+                
         # Driving logic
         if not len(self.drive_keys_pressed):
             if key == QtCore.Qt.Key_W:
@@ -272,12 +298,17 @@ class Window(QWidget):
                 sub_messages = {'b': 0}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
-            elif key == QtCore.Qt.Key_K:
+        # Conveyor logic
+        if not len(self.conveyor_keys_pressed):
+            print("conveyor release")
+            if key == QtCore.Qt.Key_K:
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
-                sub_messages = {'b': 0}
+                sub_messages = {'c': 0}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
+        print("event", len(self.conveyor_keys_pressed))
 
+    
 
     def open_connection_event(self):
         self.client.open_connection()
