@@ -17,11 +17,12 @@ sip.setapi('QTime', 2)
 sip.setapi('QUrl', 2)
 sip.setapi('QVariant', 2)
 
-# Default motor speeds {DRIVE_MOTORS, ACTUATOR, BUCKET, CONVEYOR}
-MOTOR_SPEEDS = {0: 100, 1: 100, 2: 100, 3: 100}
+# Default motor speeds {DRIVE_MOTORS, ACTUATOR, BUCKET, CONVEYOR, TURNING}
+MOTOR_SPEEDS = {0: 100, 1: 100, 2: 100, 3: 100, 4: 70}
 
 MAX_MOTOR_SPEED = 100
 
+SKID_STEERING = False
 
 class Motor(enum.Enum):
     DRIVE_MOTORS = 0
@@ -34,6 +35,8 @@ class Window(QWidget):
         super(Window, self).__init__()
 
         self.client = client
+
+        self.keys_pressed = []
 
         self.drive_keys_pressed = []
 
@@ -139,8 +142,20 @@ class Window(QWidget):
                     self.drive_keys_pressed.append(key)
 
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
-                sub_messages = {'l': -1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value],
-                                'r': 1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value]}
+                print("A Pressed")
+                sub_messages = {}
+                if SKID_STEERING:
+                    sub_messages = {'l': -1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value],
+                                    'r': 1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value]}
+                else:
+                    print("keys", self.drive_keys_pressed[0], QtCore.Qt.Key_W)
+                    if self.drive_keys_pressed[0] == QtCore.Qt.Key_W:
+                        sub_messages = {'l': max(MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value] - MOTOR_SPEEDS[4], 0),
+                                        'r': min(MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value], 100)}
+                    elif self.drive_keys_pressed[0] == QtCore.Qt.Key_S:
+                        sub_messages = {'l': -1 * max(MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value] - MOTOR_SPEEDS[4], 0),
+                                        'r': -1 * min(MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value], 100)}
+
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
             elif key == QtCore.Qt.Key_D:
@@ -148,8 +163,17 @@ class Window(QWidget):
                     self.drive_keys_pressed.append(key)
 
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
-                sub_messages = {'l': 1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value],
-                                'r': -1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value]}
+                sub_messages = {}
+                if SKID_STEERING:
+                    sub_messages = {'l': 1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value],
+                                    'r': -1 * MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value]}
+                else:
+                    if self.drive_keys_pressed[0] == QtCore.Qt.Key_W:
+                        sub_messages = {'l': min(MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value], 100),
+                                        'r': max(MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value] - MOTOR_SPEEDS[4], 0)}
+                    elif self.drive_keys_pressed[0] == QtCore.Qt.Key_S:
+                        sub_messages = {'l': -1 * min(MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value], 100),
+                                        'r': -1 * max(MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value] - MOTOR_SPEEDS[4], 0)}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
             elif key == QtCore.Qt.Key_Q:
@@ -168,16 +192,16 @@ class Window(QWidget):
             # Motor speed adjustment mode logic
             elif key == QtCore.Qt.Key_1:
                 self.motor_speed_to_adjust = Motor.DRIVE_MOTORS.value
-                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
+                print 'Drive motor speed adjustment mode:', str(self.motor_speed_to_adjust)
             elif key == QtCore.Qt.Key_2:
                 self.motor_speed_to_adjust = Motor.ACTUATOR.value
-                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
+                print 'Actuator speed adjustment mode:', str(self.motor_speed_to_adjust)
             elif key == QtCore.Qt.Key_3:
                 self.motor_speed_to_adjust = Motor.BUCKET.value
-                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
+                print 'Digging speed adjustment mode:', str(self.motor_speed_to_adjust)
             elif key == QtCore.Qt.Key_4:
                 self.motor_speed_to_adjust = Motor.CONVEYOR.value
-                print 'Motor speed adjustment mode:', str(self.motor_speed_to_adjust)
+                print 'Conveyor speed adjustment mode:', str(self.motor_speed_to_adjust)
 
 
             # Actuator logic
@@ -208,12 +232,20 @@ class Window(QWidget):
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
             # Conveyor logic
-            elif key == QtCore.Qt.Key_K:
+            elif key == QtCore.Qt.Key_O:
                 if key not in self.conveyor_keys_pressed:
                     self.conveyor_keys_pressed.append(key)
 
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
                 sub_messages = {'c': MOTOR_SPEEDS[Motor.CONVEYOR.value]}
+                message = Message(forwarding_prefix, sub_messages).message
+                self.client.send_message(message)
+            elif key == QtCore.Qt.Key_L:
+                if key not in self.conveyor_keys_pressed:
+                    self.conveyor_keys_pressed.append(key)
+
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
+                sub_messages = {'c': -1 * MOTOR_SPEEDS[Motor.CONVEYOR.value]}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
 
@@ -232,9 +264,20 @@ class Window(QWidget):
                 if len(self.drive_keys_pressed):
                     self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1], 
                                                     QtCore.Qt.NoModifier))
-
-
-
+        elif key == QtCore.Qt.Key_Left:
+            if MOTOR_SPEEDS[4] > 0:
+                MOTOR_SPEEDS[4] -= 1
+                print MOTOR_SPEEDS[4]
+                if len(self.drive_keys_pressed):
+                    self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1], 
+                                                    QtCore.Qt.NoModifier))
+        elif key == QtCore.Qt.Key_Right:
+            if MOTOR_SPEEDS[4] < 100:
+                MOTOR_SPEEDS[4] += 1
+                print MOTOR_SPEEDS[4]
+                if len(self.drive_keys_pressed):
+                    self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1], 
+                                                    QtCore.Qt.NoModifier))
 
     def keyReleaseEvent(self, event):
         if event.isAutoRepeat() or self.open_connection_button.isEnabled() \
@@ -256,7 +299,7 @@ class Window(QWidget):
             self.conveyor_keys_pressed.remove(key)
                 
         # Driving logic
-        if not len(self.drive_keys_pressed):
+        if not len(self.drive_keys_pressed): #no keys are pressed anymore
             if key == QtCore.Qt.Key_W:
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
                 sub_messages = {'l': 0, 'r': 0}
@@ -272,12 +315,15 @@ class Window(QWidget):
                 sub_messages = {'l': 0, 'r': 0}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
+                print(self.drive_keys_pressed)
             elif key == QtCore.Qt.Key_D:
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
                 sub_messages = {'l': 0, 'r': 0}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
-
+        else: #there are some drive keys still pressed
+            self.keyPressEvent(Qt.QKeyEvent(Qt.QEvent.KeyPress, self.drive_keys_pressed[-1], 
+                                                    QtCore.Qt.NoModifier))
         # Actuator logic
         if not len(self.actuator_keys_pressed):
             if key == QtCore.Qt.Key_U:
@@ -300,13 +346,11 @@ class Window(QWidget):
                 self.client.send_message(message)
         # Conveyor logic
         if not len(self.conveyor_keys_pressed):
-            print("conveyor release")
-            if key == QtCore.Qt.Key_K:
+            if key == QtCore.Qt.Key_O or key == QtCore.Qt.Key_L:
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
                 sub_messages = {'c': 0}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
-        print("event", len(self.conveyor_keys_pressed))
 
     
 
