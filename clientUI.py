@@ -48,7 +48,7 @@ class Window(QWidget):
         self.autonamous_digging_keys_pressed = []
 
         self.motor_speed_to_adjust = Motor.DRIVE_MOTORS.value
-
+        self.autonamous_dumping_keys_pressed = []
         self.init_ui()
         
     def init_ui(self):
@@ -176,17 +176,30 @@ class Window(QWidget):
                                         'r': -1 * max(MOTOR_SPEEDS[Motor.DRIVE_MOTORS.value] - MOTOR_SPEEDS[4], 0)}
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
-            elif key == QtCore.Qt.Key_Q:
+            #elif key == QtCore.Qt.Key_Q:
+                #sub_messages = {}
+                #if key in self.autonamous_digging_keys_pressed:
+                    #self.autonamous_digging_keys_pressed.remove(key)
+                #else:
+                    #self.autonamous_digging_keys_pressed.append(key)
+                #sub_messages = {'q' : '0'}
+                #forwarding_prefix = ForwardingPrefix.MOTOR.value
+                
+                #message = Message(forwarding_prefix, sub_messages).message
+                #self.client.send_message(message)
+            elif key == QtCore.Qt.Key_E:
                 sub_messages = {}
-                if key in self.autonamous_digging_keys_pressed:
+                if key in self.autonamous_dumping_keys_pressed:
                     self.autonamous_digging_keys_pressed.remove(key)
                 else:
                     self.autonamous_digging_keys_pressed.append(key)
-                sub_messages = {'q' : '0'}
+                sub_messages = {'e':'0'}
+                forwarding_prefix = ForwardingPrefix.MOTOR.value
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
                 
                 message = Message(forwarding_prefix, sub_messages).message
                 self.client.send_message(message)
+
 
 
             # Motor speed adjustment mode logic
@@ -326,12 +339,7 @@ class Window(QWidget):
                                                     QtCore.Qt.NoModifier))
         # Actuator logic
         if not len(self.actuator_keys_pressed):
-            if key == QtCore.Qt.Key_U:
-                forwarding_prefix = ForwardingPrefix.MOTOR.value
-                sub_messages = {'a': 0}
-                message = Message(forwarding_prefix, sub_messages).message
-                self.client.send_message(message)
-            elif key == QtCore.Qt.Key_J:
+            if key == QtCore.Qt.Key_U or key == QtCore.Qt.Key_J:
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
                 sub_messages = {'a': 0}
                 message = Message(forwarding_prefix, sub_messages).message
@@ -339,7 +347,7 @@ class Window(QWidget):
 
         # Bucket logic
         if not len(self.bucket_keys_pressed):
-            if key == QtCore.Qt.Key_I:
+            if key == QtCore.Qt.Key_I or key == QtCore.Qt.Key_K:
                 forwarding_prefix = ForwardingPrefix.MOTOR.value
                 sub_messages = {'b': 0}
                 message = Message(forwarding_prefix, sub_messages).message
